@@ -1,6 +1,6 @@
 # Masteri
 
-Application d'apprentissage médical progressive. Ticket 01 — MVP Foundation.
+Application d'apprentissage médical progressive.
 
 ## Installation
 
@@ -30,7 +30,9 @@ Apply migrations via the Supabase dashboard SQL editor or CLI:
 supabase db reset
 ```
 
-Or run `packages/db/supabase/migrations/0001_initial_schema.sql` manually.
+Run migrations in order:
+1. `packages/db/supabase/migrations/0001_initial_schema.sql` — core schema
+2. `packages/db/supabase/migrations/0002_badges.sql` — badges & user_badges tables
 
 ## Seed
 
@@ -45,12 +47,40 @@ pnpm test
 ## Architecture
 
 - `apps/web` — Next.js App Router web application
-- `packages/core` — Business logic: lesson schema (Zod), scoring, SM-2, progress
+- `packages/core` — Business logic: lesson schema (Zod), scoring, SM-2, progress, badges
 - `packages/db` — SQL migrations and seed data
 - `packages/content` — Educational content seeds
 - `packages/config` — Shared TypeScript and ESLint config
 
-## Hors scope (Ticket 01)
+## Features by Ticket
+
+### Ticket 01 — MVP Foundation
+- Auth (Supabase), profiles, lesson attempts, scoring, XP, streak
+- 6 anatomy levels with fill_blank + recall steps
+
+### Ticket 02 — Spaced Repetition & Reviews
+- SM-2 algorithm, spaced_rep_cards, /reviews page
+- Daily review queue with due card count on home
+
+### Ticket 03 — SVG Visuals & Analytics
+- SVG bone diagrams in intro steps (femur, tibia, cranium, etc.)
+- Error analytics dashboard `/analytics/errors`
+- Playwright e2e setup
+
+### Ticket 04 — Social & Gamification
+- **Badges system**: 8 badge types awarded on lesson completion
+  - `first_level_complete` — first level finished
+  - `perfect_score` — 100% score on a level
+  - `streak_days` — consecutive daily streak (3 and 7 day milestones)
+  - `total_xp` — XP thresholds (100 and 500 XP)
+  - `levels_complete_count` — number of completed levels (3 and 6)
+- Badges displayed in lesson summary and on profile page
+- **Daily XP goal** — configurable per-user (3/5/10/15/20 levels/day) via profile page
+- **XP history chart** — 7-day bar chart on profile page
+- **Home page** — today's XP vs daily goal, levels completed today
+- Migration: `packages/db/supabase/migrations/0002_badges.sql`
+
+## Hors scope
 
 - 3D viewer
 - Expo mobile app

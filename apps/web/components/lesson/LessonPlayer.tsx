@@ -1,6 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import type { LessonContentPublic, RecallStep, FillBlankStep } from "@masteri/core";
+import { BADGE_LABELS } from "@/lib/badges";
 import IntroStepView from "./IntroStep";
 import RecallStepView from "./RecallStep";
 import FillBlankStepView from "./FillBlankStep";
@@ -23,6 +24,7 @@ interface SummaryState {
   isCompleted: boolean;
   isPerfect: boolean;
   masteredConcepts: string[];
+  newBadges: string[];
 }
 
 function inferBoneType(title: string): string | undefined {
@@ -142,6 +144,20 @@ export default function LessonPlayer({ levelId }: LessonPlayerProps) {
                 <li key={c} className="text-sm px-3 py-1 rounded-lg" style={{ backgroundColor: "rgba(0,255,120,0.1)", color: "var(--success)" }}>✓ {c}</li>
               ))}
             </ul>
+          </div>
+        )}
+        {summary.newBadges && summary.newBadges.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm" style={{ color: "var(--xp-color)" }}>🏅 Badges débloqués !</h3>
+            {summary.newBadges.map((b: string) => {
+              const label = BADGE_LABELS[b];
+              return (
+                <div key={b} className="px-3 py-2 rounded-lg text-sm flex items-center gap-2" style={{ backgroundColor: "rgba(255,179,71,0.1)", color: "var(--xp-color)" }}>
+                  <span>{label?.icon ?? "🏅"}</span>
+                  <span>{label?.name ?? b.replace(/_/g, " ")}</span>
+                </div>
+              );
+            })}
           </div>
         )}
         <a href="/home" className="block w-full text-center px-4 py-3 rounded-xl font-semibold text-white" style={{ backgroundColor: "var(--anatomy)" }}>

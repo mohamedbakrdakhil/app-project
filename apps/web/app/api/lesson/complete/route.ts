@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { calculateLessonScore } from "@masteri/core";
+import { calculateLessonScore, evaluateBadges, type BadgeConditionType } from "@masteri/core";
 
 const CompleteBodySchema = z.object({
   attemptId: z.string().uuid(),
@@ -119,6 +119,33 @@ export async function POST(request: NextRequest) {
       levels_completed: scoreResult.isCompleted ? 1 : 0,
     }, { onConflict: "user_id,activity_date" });
 
+    // Badge evaluation
+    const [{ data: allBadges }, { data: earnedBadges }, { count: levelsCompleted }] = await Promise.all([
+      admin.from("badges").select("id, condition_type, condition_value"),
+      admin.from("user_badges").select("badge_id").eq("user_id", user.id),
+      admin.from("user_progress").select("level_id", { count: "exact", head: true }).eq("user_id", user.id).eq("is_completed", true),
+    ]);
+
+    const alreadyEarned = (earnedBadges ?? []).map((b) => b.badge_id as string);
+    const badgeStats = {
+      levelsCompleted: levelsCompleted ?? 0,
+      hasPerfectScore: scoreResult.isPerfect,
+      streakDays: newStreak,
+      totalXp: (profile?.total_xp ?? 0) + scoreResult.totalXp,
+    };
+
+    const newBadgeIds = evaluateBadges(
+      (allBadges ?? []) as Array<{ id: string; condition_type: BadgeConditionType; condition_value: number }>,
+      badgeStats,
+      alreadyEarned,
+    );
+
+    if (newBadgeIds.length > 0) {
+      await admin.from("user_badges").insert(
+        newBadgeIds.map((badge_id) => ({ user_id: user.id, badge_id }))
+      );
+    }
+
     const { data: level } = await admin
       .from("levels")
       .select("content_public")
@@ -154,6 +181,7 @@ export async function POST(request: NextRequest) {
       isCompleted: scoreResult.isCompleted,
       isPerfect: scoreResult.isPerfect,
       masteredConcepts,
+      newBadges: newBadgeIds,
     });
   } catch (e) {
     if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });

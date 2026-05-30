@@ -13,18 +13,22 @@ export default async function HomePage() {
 
   const admin = createSupabaseAdminClient();
 
-  const today = new Date().toISOString().split("T")[0];
-  const [profileRes, subjectsRes, allLevelsRes, progressRes, dueRes] = await Promise.all([
+  const todayStr = new Date().toISOString().split("T")[0]!;
+  const [profileRes, subjectsRes, allLevelsRes, progressRes, dueRes, todayActivityRes] = await Promise.all([
     admin.from("profiles").select("full_name, email, streak, total_xp, daily_goal").eq("id", user.id).single(),
     admin.from("subjects").select("id, name_fr, icon, color, description_fr").eq("is_published", true).order("order_index"),
     admin.from("levels").select("id, chapter_id, title_fr, order_index").eq("is_published", true).order("order_index"),
     admin.from("user_progress").select("level_id, is_completed").eq("user_id", user.id),
-    admin.from("spaced_rep_cards").select("id", { count: "exact", head: true }).eq("user_id", user.id).lte("next_review_date", today),
+    admin.from("spaced_rep_cards").select("id", { count: "exact", head: true }).eq("user_id", user.id).lte("next_review_date", todayStr),
+    admin.from("streak_history").select("xp_earned, levels_completed").eq("user_id", user.id).eq("activity_date", todayStr).maybeSingle(),
   ]);
 
   const profile = profileRes.data;
   const subjects = subjectsRes.data ?? [];
   const dueCount = dueRes.count;
+  const todayActivity = todayActivityRes.data;
+  const todayXp = todayActivity?.xp_earned ?? 0;
+  const goalXp = (profile?.daily_goal ?? 5) * 15;
 
   // Find next incomplete level
   const allLevels = allLevelsRes.data ?? [];
@@ -65,7 +69,11 @@ export default async function HomePage() {
         <StreakBadge streak={profile?.streak ?? 0} />
       </div>
 
-      <XPBar current={profile?.total_xp ?? 0} goal={(profile?.daily_goal ?? 5) * 15} />
+      <XPBar current={todayXp} goal={goalXp} />
+      <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+        <span>🎯</span>
+        <span>{todayActivity?.levels_completed ?? 0} / {profile?.daily_goal ?? 5} niveaux aujourd&apos;hui</span>
+      </div>
 
       {nextLevel && (
         <Link href={`/lesson/${nextLevel.id}`}>
