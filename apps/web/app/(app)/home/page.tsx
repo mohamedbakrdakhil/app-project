@@ -13,20 +13,43 @@ export default async function HomePage() {
 
   const admin = createSupabaseAdminClient();
 
-  const [profileRes, subjectsRes] = await Promise.all([
+  const today = new Date().toISOString().split("T")[0];
+  const [profileRes, subjectsRes, allLevelsRes, progressRes, dueRes] = await Promise.all([
     admin.from("profiles").select("full_name, email, streak, total_xp, daily_goal").eq("id", user.id).single(),
     admin.from("subjects").select("id, name_fr, icon, color, description_fr").eq("is_published", true).order("order_index"),
+    admin.from("levels").select("id, chapter_id, title_fr, order_index").eq("is_published", true).order("order_index"),
+    admin.from("user_progress").select("level_id, is_completed").eq("user_id", user.id),
+    admin.from("spaced_rep_cards").select("id", { count: "exact", head: true }).eq("user_id", user.id).lte("next_review_date", today),
   ]);
 
   const profile = profileRes.data;
   const subjects = subjectsRes.data ?? [];
+  const dueCount = dueRes.count;
 
-  const today = new Date().toISOString().split("T")[0];
-  const { count: dueCount } = await admin
-    .from("spaced_rep_cards")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .lte("next_review_date", today);
+  // Find next incomplete level
+  const allLevels = allLevelsRes.data ?? [];
+  const progressData = progressRes.data ?? [];
+  const completedSet = new Set(progressData.filter((p) => p.is_completed).map((p) => p.level_id));
+
+  const byChapter = new Map<string, Array<{ id: string; title_fr: string; order_index: number }>>();
+  for (const l of allLevels) {
+    if (!byChapter.has(l.chapter_id)) byChapter.set(l.chapter_id, []);
+    byChapter.get(l.chapter_id)!.push(l);
+  }
+
+  let nextLevel: { id: string; titleFr: string } | null = null;
+  for (const levels of byChapter.values()) {
+    const sorted = levels.sort((a, b) => a.order_index - b.order_index);
+    for (let i = 0; i < sorted.length; i++) {
+      const l = sorted[i]!;
+      const prevCompleted = i === 0 || completedSet.has(sorted[i - 1]!.id);
+      if (!completedSet.has(l.id) && prevCompleted) {
+        nextLevel = { id: l.id, titleFr: l.title_fr };
+        break;
+      }
+    }
+    if (nextLevel) break;
+  }
 
   const displayName = profile?.full_name ?? profile?.email ?? "Étudiant";
 
@@ -43,6 +66,18 @@ export default async function HomePage() {
       </div>
 
       <XPBar current={profile?.total_xp ?? 0} goal={(profile?.daily_goal ?? 5) * 15} />
+
+      {nextLevel && (
+        <Link href={`/lesson/${nextLevel.id}`}>
+          <Card className="flex items-center justify-between hover:scale-[1.01] transition-transform" style={{ border: "1px solid rgba(255,77,109,0.4)" }}>
+            <div>
+              <p className="text-xs font-medium mb-1" style={{ color: "var(--anatomy)" }}>CONTINUER</p>
+              <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{nextLevel.titleFr}</p>
+            </div>
+            <span className="text-2xl">▶️</span>
+          </Card>
+        </Link>
+      )}
 
       {(dueCount ?? 0) > 0 && (
         <Link href="/reviews">

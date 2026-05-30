@@ -62,7 +62,7 @@ BEGIN
           "subtitle": "Os long de la cuisse",
           "body": "Le fémur est l'os de la cuisse. Il participe à la transmission du poids du bassin vers le genou et sert de point d'insertion à de nombreux muscles.",
           "fact": "Le fémur est généralement décrit comme l'os le plus long et le plus robuste du corps humain.",
-          "visual": {"type": "placeholder", "alt": "Schéma simplifié du fémur"},
+          "visual": {"type": "placeholder", "alt": "femur"},
           "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system", "note": "Référence générale, contenu réécrit de manière originale."}]
         },
         {
@@ -143,7 +143,7 @@ BEGIN
           "subtitle": "Os médial de la jambe",
           "body": "Le tibia est l'os médial de la jambe. C'est le principal os porteur du membre inférieur entre le genou et la cheville, supportant l'essentiel du poids corporel.",
           "fact": "Le tibia est le deuxième os le plus long du corps humain, après le fémur.",
-          "visual": {"type": "placeholder", "alt": "Schéma simplifié du tibia"},
+          "visual": {"type": "placeholder", "alt": "tibia"},
           "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
         },
         {
@@ -224,7 +224,7 @@ BEGIN
           "subtitle": "Protection de l'encéphale",
           "body": "Le crâne est l'ensemble osseux qui protège l'encéphale et les organes des sens. Il comprend le neurocrâne (boîte crânienne) et le viscérocrâne (massif facial).",
           "fact": "Le crâne adulte est composé de 22 os, dont 8 forment la boîte crânienne et 14 le massif facial.",
-          "visual": {"type": "placeholder", "alt": "Schéma simplifié du crâne"},
+          "visual": {"type": "placeholder", "alt": "crane"},
           "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
         },
         {
@@ -321,7 +321,7 @@ BEGIN
           "subtitle": "Os latéral de la jambe",
           "body": "La fibula est l'os latéral de la jambe, plus fin que le tibia. Elle joue un rôle important dans la stabilité de la cheville et sert de point d'attache à de nombreux muscles.",
           "fact": "La fibula ne supporte qu'environ 15% du poids corporel, mais elle est essentielle à la stabilité de la cheville.",
-          "visual": {"type": "placeholder", "alt": "Schéma simplifié de la fibula"},
+          "visual": {"type": "placeholder", "alt": "fibula"},
           "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
         },
         {
@@ -401,7 +401,7 @@ BEGIN
           "subtitle": "Structure de base",
           "body": "Une vertèbre type est composée d'un corps vertébral en avant, d'un arc vertébral en arrière, et de divers processus (épineux, transverses, articulaires). L'ensemble délimite le canal vertébral qui protège la moelle épinière.",
           "fact": "La colonne vertébrale humaine comprend 33 à 34 vertèbres réparties en 5 régions : cervicale, thoracique, lombaire, sacrée et coccygienne.",
-          "visual": {"type": "placeholder", "alt": "Schéma d'une vertèbre type"},
+          "visual": {"type": "placeholder", "alt": "vertebra"},
           "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
         },
         {
@@ -481,7 +481,7 @@ BEGIN
           "subtitle": "Cage thoracique",
           "body": "Les côtes sont des os plats et incurvés qui forment la cage thoracique. On distingue les vraies côtes (articulées directement avec le sternum), les fausses côtes (reliées au sternum via le cartilage costal commun) et les côtes flottantes (sans attache sternale).",
           "fact": "Nous avons 12 paires de côtes, soit 24 côtes au total, qui protègent le cœur, les poumons et les gros vaisseaux.",
-          "visual": {"type": "placeholder", "alt": "Schéma de la cage thoracique"},
+          "visual": {"type": "placeholder", "alt": "cotes"},
           "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
         },
         {

@@ -64,11 +64,18 @@ export default async function SubjectPage({ params }: Props) {
         const chapterLevels = levels
           .filter((l) => l.chapter_id === chapter.id)
           .sort((a, b) => a.order_index - b.order_index);
+        const chapterComplete = chapterLevels.filter((l) => completedIds.has(l.id)).length;
+        const chapterTotal = chapterLevels.length;
+        const chapterPct = chapterTotal > 0 ? Math.round((chapterComplete / chapterTotal) * 100) : 0;
         return (
           <div key={chapter.id} className="space-y-3">
             <div className="flex items-center gap-2">
               <span>{chapter.icon ?? "📖"}</span>
               <h2 className="font-semibold" style={{ color: "var(--text-secondary)" }}>{chapter.title_fr}</h2>
+              <span className="ml-auto text-xs" style={{ color: "var(--text-muted)" }}>{chapterComplete} / {chapterTotal} niveaux complétés</span>
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-card)" }}>
+              <div className="h-full rounded-full transition-all" style={{ width: `${chapterPct}%`, backgroundColor: "var(--anatomy)" }} />
             </div>
             <div className="space-y-2">
               {chapterLevels.map((level, idx) => {

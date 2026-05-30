@@ -25,6 +25,17 @@ interface SummaryState {
   masteredConcepts: string[];
 }
 
+function inferBoneType(title: string): string | undefined {
+  const t = title.toLowerCase();
+  if (t.includes("fémur") || t.includes("femur")) return "femur";
+  if (t.includes("tibia")) return "tibia";
+  if (t.includes("crâne") || t.includes("crane")) return "crane";
+  if (t.includes("fibula")) return "fibula";
+  if (t.includes("vertèbre") || t.includes("vertebre") || t.includes("vertebra")) return "vertebra";
+  if (t.includes("côte") || t.includes("cote")) return "cotes";
+  return undefined;
+}
+
 export default function LessonPlayer({ levelId }: LessonPlayerProps) {
   const [phase, setPhase] = useState<Phase>("loading");
   const [attempt, setAttempt] = useState<AttemptState | null>(null);
@@ -150,7 +161,7 @@ export default function LessonPlayer({ levelId }: LessonPlayerProps) {
       <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-card)" }}>
         <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: "var(--anatomy)" }} />
       </div>
-      {step.type === "intro" && <IntroStepView step={step} onNext={handleNext} />}
+      {step.type === "intro" && <IntroStepView step={step} onNext={handleNext} boneType={inferBoneType(step.title)} />}
       {step.type === "recall" && (
         <RecallStepWrapper
           step={step}

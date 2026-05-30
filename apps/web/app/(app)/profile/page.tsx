@@ -9,11 +9,26 @@ export default async function ProfilePage() {
   if (!user) redirect("/login");
 
   const admin = createSupabaseAdminClient();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("full_name, email, streak, total_xp, current_league_tier")
-    .eq("id", user.id)
-    .single();
+  const [profileRes, attemptsRes] = await Promise.all([
+    admin.from("profiles").select("full_name, email, streak, total_xp, current_league_tier").eq("id", user.id).single(),
+    admin.from("question_attempts").select("question_key, is_correct").eq("user_id", user.id).limit(500),
+  ]);
+
+  const profile = profileRes.data;
+  const questionAttempts = attemptsRes.data ?? [];
+
+  const statsMap: Record<string, { total: number; wrong: number }> = {};
+  for (const row of questionAttempts) {
+    const key = row.question_key as string;
+    if (!statsMap[key]) statsMap[key] = { total: 0, wrong: 0 };
+    statsMap[key]!.total += 1;
+    if (!row.is_correct) statsMap[key]!.wrong += 1;
+  }
+  const hardConcepts = Object.entries(statsMap)
+    .filter(([, s]) => s.wrong > 0)
+    .sort(([, a], [, b]) => b.wrong - a.wrong)
+    .slice(0, 5)
+    .map(([key, s]) => ({ key, rate: Math.round((s.wrong / s.total) * 100) }));
 
   return (
     <div className="space-y-6">
@@ -38,6 +53,17 @@ export default async function ProfilePage() {
           </div>
         </div>
       </Card>
+      {hardConcepts.length > 0 && (
+        <Card className="space-y-3">
+          <h2 className="font-semibold" style={{ color: "var(--text-secondary)" }}>Concepts difficiles</h2>
+          {hardConcepts.map((c) => (
+            <div key={c.key} className="flex justify-between items-center text-sm">
+              <span style={{ color: "var(--text-primary)" }}>{c.key}</span>
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: "rgba(255,85,85,0.15)", color: "var(--error)" }}>{c.rate}% erreurs</span>
+            </div>
+          ))}
+        </Card>
+      )}
       <LogoutButton />
     </div>
   );
