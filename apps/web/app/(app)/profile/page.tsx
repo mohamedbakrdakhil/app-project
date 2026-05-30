@@ -14,16 +14,18 @@ export default async function ProfilePage() {
 
   const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split("T")[0];
 
-  const [profileRes, attemptsRes, userBadgesRes, streakHistoryRes] = await Promise.all([
+  const [profileRes, attemptsRes, userBadgesRes, streakHistoryRes, subscriptionRes] = await Promise.all([
     admin.from("profiles").select("full_name, email, streak, total_xp, current_league_tier, daily_goal").eq("id", user.id).single(),
     admin.from("question_attempts").select("question_key, is_correct").eq("user_id", user.id).limit(500),
     admin.from("user_badges").select("badge_id, earned_at, badges(name_fr, description_fr, icon)").eq("user_id", user.id).order("earned_at", { ascending: false }),
     admin.from("streak_history").select("activity_date, xp_earned").eq("user_id", user.id).gte("activity_date", sevenDaysAgo).order("activity_date"),
+    admin.from("plan_subscriptions").select("plan, current_period_end").eq("user_id", user.id).maybeSingle(),
   ]);
 
   const profile = profileRes.data;
   const questionAttempts = attemptsRes.data ?? [];
   const userBadges = userBadgesRes.data ?? [];
+  const subscription = subscriptionRes.data;
 
   // Build 7-day array filling missing days with 0
   const days: { date: string; xp: number }[] = [];
@@ -69,6 +71,26 @@ export default async function ProfilePage() {
           </div>
         </div>
         <XPHistoryChart days={days} />
+      </Card>
+
+      <Card className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-semibold" style={{ color: "var(--text-primary)" }}>
+              {subscription?.plan === "premium" ? "✨ Premium" : "Gratuit"}
+            </p>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              {subscription?.plan === "free" || !subscription
+                ? "3 leçons par jour"
+                : "Accès illimité"}
+            </p>
+          </div>
+          {(subscription?.plan === "free" || !subscription) && (
+            <span className="text-xs px-3 py-1 rounded-full font-semibold" style={{ backgroundColor: "rgba(255,179,71,0.15)", color: "var(--xp-color)" }}>
+              Passer Premium
+            </span>
+          )}
+        </div>
       </Card>
 
       <Card className="space-y-3">

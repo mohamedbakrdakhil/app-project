@@ -11,7 +11,7 @@ interface LessonPlayerProps {
   levelId: string;
 }
 
-type Phase = "loading" | "playing" | "summary" | "error";
+type Phase = "loading" | "playing" | "summary" | "error" | "limit_reached";
 
 interface AttemptState {
   attemptId: string;
@@ -54,6 +54,10 @@ export default function LessonPlayer({ levelId }: LessonPlayerProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ levelId }),
       });
+      if (res.status === 429) {
+        setPhase("limit_reached");
+        return;
+      }
       if (!res.ok) throw new Error("Impossible de démarrer la leçon");
       const data = await res.json() as { attemptId: string; level: { contentPublic: LessonContentPublic } };
       setAttempt({ attemptId: data.attemptId, content: data.level.contentPublic });
@@ -121,6 +125,29 @@ export default function LessonPlayer({ levelId }: LessonPlayerProps) {
 
   if (phase === "loading") {
     return <div className="flex items-center justify-center h-64 text-lg" style={{ color: "var(--text-muted)" }}>Chargement...</div>;
+  }
+  if (phase === "limit_reached") {
+    return (
+      <div className="space-y-6 text-center p-4">
+        <div className="text-5xl">⭐</div>
+        <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Limite du jour atteinte</h2>
+        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+          Tu as utilisé tes 3 leçons gratuites du jour. Reviens demain ou passe en Premium pour un accès illimité.
+        </p>
+        <div className="p-4 rounded-2xl space-y-2 text-left" style={{ backgroundColor: "rgba(255,179,71,0.1)", border: "1px solid rgba(255,179,71,0.3)" }}>
+          <p className="font-semibold" style={{ color: "var(--xp-color)" }}>✨ Premium</p>
+          <ul className="text-sm space-y-1" style={{ color: "var(--text-secondary)" }}>
+            <li>• Leçons illimitées</li>
+            <li>• Toutes les matières</li>
+            <li>• Révisions avancées</li>
+            <li>• AI mentor (bientôt)</li>
+          </ul>
+        </div>
+        <a href="/home" className="block w-full text-center px-4 py-3 rounded-xl font-semibold text-white" style={{ backgroundColor: "var(--anatomy)" }}>
+          Retour à l&apos;accueil
+        </a>
+      </div>
+    );
   }
   if (phase === "error") {
     return <div className="p-4 rounded-xl text-center" style={{ color: "var(--error)", backgroundColor: "rgba(255,85,85,0.1)" }}>{error}</div>;

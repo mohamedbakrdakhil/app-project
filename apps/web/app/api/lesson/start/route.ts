@@ -17,6 +17,34 @@ export async function POST(request: NextRequest) {
     const body = StartBodySchema.parse(await request.json());
     const admin = createSupabaseAdminClient();
 
+    // Check plan and daily usage
+    const today = new Date().toISOString().split("T")[0]!;
+
+    const [{ data: subscription }, { data: usage }] = await Promise.all([
+      admin.from("plan_subscriptions").select("plan").eq("user_id", user.id).maybeSingle(),
+      admin.from("daily_lesson_usage").select("lessons_started").eq("user_id", user.id).eq("usage_date", today).maybeSingle(),
+    ]);
+
+    const plan = subscription?.plan ?? "free";
+    const lessonsToday = (usage?.lessons_started ?? 0);
+    const FREE_DAILY_LIMIT = 3;
+
+    if (plan === "free" && lessonsToday >= FREE_DAILY_LIMIT) {
+      return NextResponse.json({
+        error: "daily_limit_reached",
+        message: `Limite quotidienne atteinte (${FREE_DAILY_LIMIT} leçons/jour en gratuit). Reviens demain ou passe en Premium.`,
+        plan: "free",
+        limit: FREE_DAILY_LIMIT,
+      }, { status: 429 });
+    }
+
+    // Increment usage
+    await admin.from("daily_lesson_usage").upsert({
+      user_id: user.id,
+      usage_date: today,
+      lessons_started: lessonsToday + 1,
+    }, { onConflict: "user_id,usage_date" });
+
     const { data: level, error: levelErr } = await admin
       .from("levels")
       .select("id, title_fr, content_public, is_published")
