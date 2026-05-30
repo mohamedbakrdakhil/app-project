@@ -1,0 +1,10 @@
+{
+  "name": "masteri",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "lint": "pnpm --filter web lint",
+    "typecheck": "pnpm --filter web typecheck && pnpm --filter @masteri/core typecheck",
+    "test": "pnpm --filter @masteri/core test"
+  }
+}
