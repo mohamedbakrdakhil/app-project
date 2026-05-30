@@ -73,19 +73,34 @@ export async function POST(request: NextRequest) {
       last_attempt_at: new Date().toISOString(),
     }, { onConflict: "user_id,level_id" });
 
-    const today = new Date().toISOString().split("T")[0] as string;
+    const nowUTC = new Date();
+    const todayUTC = nowUTC.toISOString().split("T")[0] as string;
+    const yesterdayUTC = new Date(nowUTC.getTime() - 86400000).toISOString().split("T")[0] as string;
+
     const { data: profile } = await admin
       .from("profiles")
       .select("total_xp, streak, last_active")
       .eq("id", user.id)
       .single();
 
-    const lastActive = profile?.last_active as string | null;
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+    const { data: todayEntry } = await admin
+      .from("streak_history")
+      .select("activity_date")
+      .eq("user_id", user.id)
+      .eq("activity_date", todayUTC)
+      .maybeSingle();
+
+    const { data: yesterdayEntry } = await admin
+      .from("streak_history")
+      .select("activity_date")
+      .eq("user_id", user.id)
+      .eq("activity_date", yesterdayUTC)
+      .maybeSingle();
+
     let newStreak = profile?.streak ?? 0;
-    if (lastActive === today) {
-      // already active today, no streak change
-    } else if (lastActive === yesterday) {
+    if (todayEntry) {
+      // already counted today — streak unchanged
+    } else if (yesterdayEntry) {
       newStreak += 1;
     } else {
       newStreak = 1;
@@ -94,12 +109,12 @@ export async function POST(request: NextRequest) {
     await admin.from("profiles").update({
       total_xp: (profile?.total_xp ?? 0) + scoreResult.totalXp,
       streak: newStreak,
-      last_active: today,
+      last_active: todayUTC,
     }).eq("id", user.id);
 
     await admin.from("streak_history").upsert({
       user_id: user.id,
-      activity_date: today,
+      activity_date: todayUTC,
       xp_earned: scoreResult.totalXp,
       levels_completed: scoreResult.isCompleted ? 1 : 0,
     }, { onConflict: "user_id,activity_date" });

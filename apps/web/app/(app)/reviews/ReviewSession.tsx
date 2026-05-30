@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
 
 type ReviewCard = {
   id: string;
@@ -23,13 +22,25 @@ const QUALITY_LABELS: Record<number, string> = {
   5: "Très facile",
 };
 
+const QUALITY_COLORS: Record<number, { bg: string; text: string }> = {
+  0: { bg: "rgba(255,85,85,0.85)", text: "#fff" },
+  1: { bg: "rgba(255,120,60,0.85)", text: "#fff" },
+  2: { bg: "rgba(255,180,50,0.85)", text: "#fff" },
+  3: { bg: "rgba(60,200,120,0.85)", text: "#fff" },
+  4: { bg: "rgba(30,180,220,0.85)", text: "#fff" },
+  5: { bg: "rgba(100,120,255,0.85)", text: "#fff" },
+};
+
 export default function ReviewSession({ cards }: ReviewSessionProps) {
   const [queue] = useState<ReviewCard[]>(cards);
   const [current, setCurrent] = useState(0);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [showKey, setShowKey] = useState(false);
 
   const card = queue[current];
+  const total = queue.length;
+  const progress = total > 0 ? ((current) / total) * 100 : 0;
 
   const handleQuality = async (quality: number) => {
     if (!card) return;
@@ -40,6 +51,7 @@ export default function ReviewSession({ cards }: ReviewSessionProps) {
       body: JSON.stringify({ cardId: card.id, quality }),
     });
     setLoading(false);
+    setShowKey(false);
     const next = current + 1;
     if (next >= queue.length) {
       setDone(true);
@@ -72,24 +84,58 @@ export default function ReviewSession({ cards }: ReviewSessionProps) {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm" style={{ color: "var(--text-muted)" }}>{current + 1} / {queue.length}</p>
-      <Card className="min-h-[200px] flex items-center justify-center">
-        <p className="text-lg font-semibold text-center" style={{ color: "var(--text-primary)" }}>{card.concept_label}</p>
+      {/* Progress bar */}
+      <div className="space-y-1">
+        <div className="flex justify-between text-xs" style={{ color: "var(--text-muted)" }}>
+          <span>{current + 1} / {total}</span>
+          <span>{Math.round(progress)}%</span>
+        </div>
+        <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-card)" }}>
+          <div
+            className="h-full rounded-full transition-all"
+            style={{ width: `${progress}%`, backgroundColor: "var(--anatomy)" }}
+          />
+        </div>
+      </div>
+
+      {/* Card */}
+      <Card className="min-h-[200px] flex flex-col items-center justify-center gap-4 p-6">
+        <p className="text-xl font-bold text-center" style={{ color: "var(--text-primary)" }}>
+          {card.concept_label}
+        </p>
+        <button
+          onClick={() => setShowKey(v => !v)}
+          className="text-xs underline"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {showKey ? "Masquer" : "Voir"} la clé de concept
+        </button>
+        {showKey && (
+          <p className="text-xs font-mono px-3 py-1 rounded-lg" style={{ backgroundColor: "var(--bg-card)", color: "var(--text-muted)", border: "1px solid var(--border-soft)" }}>
+            {card.concept_key}
+          </p>
+        )}
       </Card>
+
+      {/* Quality buttons */}
       <div>
         <p className="text-sm mb-3 text-center" style={{ color: "var(--text-secondary)" }}>Comment tu t&apos;en souviens ?</p>
-        <div className="grid grid-cols-3 gap-2">
-          {[0, 1, 2, 3, 4, 5].map((q) => (
-            <Button
-              key={q}
-              variant={q >= 3 ? "primary" : "secondary"}
-              onClick={() => handleQuality(q)}
-              loading={loading}
-              className="text-xs py-2"
-            >
-              {QUALITY_LABELS[q]}
-            </Button>
-          ))}
+        <div className="grid grid-cols-6 gap-1">
+          {[0, 1, 2, 3, 4, 5].map((q) => {
+            const colors = QUALITY_COLORS[q];
+            return (
+              <button
+                key={q}
+                onClick={() => handleQuality(q)}
+                disabled={loading}
+                className="flex flex-col items-center py-2 px-1 rounded-xl text-xs font-semibold transition-opacity disabled:opacity-50"
+                style={{ backgroundColor: colors?.bg ?? "var(--bg-card)", color: colors?.text ?? "var(--text-primary)" }}
+              >
+                <span className="text-base font-bold">{q}</span>
+                <span className="text-[10px] leading-tight text-center">{QUALITY_LABELS[q]}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

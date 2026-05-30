@@ -8,7 +8,10 @@ const AnswerBodySchema = z.object({
   attemptId: z.string().uuid(),
   stepIndex: z.number().int().nonnegative(),
   questionKey: z.string().min(1),
-  selectedIndex: z.number().int().min(0).max(3),
+  selectedIndex: z.number().int().min(0).max(3).optional(),
+  textAnswer: z.string().max(200).optional(),
+}).refine(d => d.selectedIndex !== undefined || d.textAnswer !== undefined, {
+  message: "Either selectedIndex or textAnswer is required",
 });
 
 export async function POST(request: NextRequest) {
@@ -43,7 +46,8 @@ export async function POST(request: NextRequest) {
         .select("answers")
         .eq("level_id", attempt.level_id)
         .single();
-      const answers = answerKey?.answers as Record<string, { correctIndex: number; explanation: string; conceptKey: string }> | undefined;
+      type AnyEntry = { correctIndex?: number; acceptedAnswers?: string[]; explanation: string; conceptKey: string };
+      const answers = answerKey?.answers as Record<string, AnyEntry> | undefined;
       const entry = answers?.[body.questionKey];
       return NextResponse.json({
         isCorrect: existing.is_correct,
@@ -61,11 +65,21 @@ export async function POST(request: NextRequest) {
 
     if (!answerKeyRow) return NextResponse.json({ error: "Answer key not found" }, { status: 500 });
 
-    const answers = answerKeyRow.answers as Record<string, { correctIndex: number; explanation: string; conceptKey: string }>;
+    type AnyEntry = { correctIndex?: number; acceptedAnswers?: string[]; explanation: string; conceptKey: string };
+    const answers = answerKeyRow.answers as Record<string, AnyEntry>;
     const entry = answers[body.questionKey];
     if (!entry) return NextResponse.json({ error: "Question not found" }, { status: 400 });
 
-    const isCorrect = body.selectedIndex === entry.correctIndex;
+    let isCorrect: boolean;
+    if ("acceptedAnswers" in entry && entry.acceptedAnswers) {
+      // fill_blank: normalize and compare
+      const normalized = (body.textAnswer ?? "").trim().toLowerCase();
+      isCorrect = entry.acceptedAnswers.some(a => a.trim().toLowerCase() === normalized);
+    } else {
+      // MCQ
+      isCorrect = body.selectedIndex === entry.correctIndex;
+    }
+
     const xpEarned = isCorrect ? XP_RULES.correctAnswer : XP_RULES.incorrectAnswer;
 
     await admin.from("question_attempts").insert({
@@ -74,7 +88,9 @@ export async function POST(request: NextRequest) {
       level_id: attempt.level_id,
       step_index: body.stepIndex,
       question_key: body.questionKey,
-      answer: { selectedIndex: body.selectedIndex },
+      answer: "acceptedAnswers" in entry && entry.acceptedAnswers
+        ? { textAnswer: body.textAnswer }
+        : { selectedIndex: body.selectedIndex },
       is_correct: isCorrect,
       xp_earned: xpEarned,
     });
@@ -82,7 +98,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       isCorrect,
       xpEarned,
-      correctIndex: entry.correctIndex,
+      correctIndex: entry.correctIndex ?? 0,
       explanation: entry.explanation,
     });
   } catch (e) {

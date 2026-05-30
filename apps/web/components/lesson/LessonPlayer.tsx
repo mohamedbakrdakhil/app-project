@@ -1,8 +1,9 @@
 "use client";
 import { useState, useCallback } from "react";
-import type { LessonContentPublic, RecallStep } from "@masteri/core";
+import type { LessonContentPublic, RecallStep, FillBlankStep } from "@masteri/core";
 import IntroStepView from "./IntroStep";
 import RecallStepView from "./RecallStep";
+import FillBlankStepView from "./FillBlankStep";
 import CompleteStepView from "./CompleteStep";
 
 interface LessonPlayerProps {
@@ -61,6 +62,17 @@ export default function LessonPlayer({ levelId }: LessonPlayerProps) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ attemptId: attempt.attemptId, stepIndex, questionKey, selectedIndex }),
+    });
+    if (!res.ok) throw new Error("Erreur de validation");
+    return res.json();
+  }, [attempt, stepIndex]);
+
+  const handleFillBlankAnswer = useCallback(async (questionKey: string, textAnswer: string): Promise<{ isCorrect: boolean; explanation: string; xpEarned: number }> => {
+    if (!attempt) throw new Error("No attempt");
+    const res = await fetch("/api/lesson/answer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ attemptId: attempt.attemptId, stepIndex, questionKey, textAnswer }),
     });
     if (!res.ok) throw new Error("Erreur de validation");
     return res.json();
@@ -146,6 +158,13 @@ export default function LessonPlayer({ levelId }: LessonPlayerProps) {
           onNext={handleNext}
         />
       )}
+      {step.type === "fill_blank" && (
+        <FillBlankStepWrapper
+          step={step}
+          onAnswer={handleFillBlankAnswer}
+          onNext={handleNext}
+        />
+      )}
       {step.type === "complete" && <CompleteStepView step={step} onNext={handleNext} />}
     </div>
   );
@@ -157,4 +176,12 @@ function RecallStepWrapper({ step, onAnswer, onNext }: {
   onNext: () => void;
 }) {
   return <RecallStepView step={step} onAnswer={onAnswer} onNext={onNext} />;
+}
+
+function FillBlankStepWrapper({ step, onAnswer, onNext }: {
+  step: FillBlankStep;
+  onAnswer: (questionKey: string, textAnswer: string) => Promise<{ isCorrect: boolean; explanation: string; xpEarned: number }>;
+  onNext: () => void;
+}) {
+  return <FillBlankStepView step={step} onAnswer={onAnswer} onNext={onNext} />;
 }

@@ -285,3 +285,259 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Seed: Levels 4, 5, 6 — fibula, vertèbre, côtes (with fill_blank)
+-- ============================================================
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_fibula_id uuid;
+  v_level_vertebre_id uuid;
+  v_level_cotes_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'anatomy' AND slug = 'skeletal_system';
+
+  -- ---- Fibula ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'fibula',
+    'La fibula',
+    4,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "La fibula",
+          "subtitle": "Os latéral de la jambe",
+          "body": "La fibula est l'os latéral de la jambe, plus fin que le tibia. Elle joue un rôle important dans la stabilité de la cheville et sert de point d'attache à de nombreux muscles.",
+          "fact": "La fibula ne supporte qu'environ 15% du poids corporel, mais elle est essentielle à la stabilité de la cheville.",
+          "visual": {"type": "placeholder", "alt": "Schéma simplifié de la fibula"},
+          "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "fibula_location_001",
+          "prompt": "La fibula est l'os ___ de la jambe.",
+          "hint": "Pense à sa position par rapport au tibia.",
+          "xpReward": 10
+        },
+        {
+          "type": "recall",
+          "questionKey": "fibula_articulation_001",
+          "question": "Quelle articulation principale forme la fibula avec le tibia ?",
+          "options": ["La syndesmose tibio-fibulaire", "L'articulation coxo-fémorale", "L'articulation huméro-radiale", "La symphyse pubienne"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Fibula terminée",
+          "body": "Tu connais maintenant la position et le rôle de la fibula.",
+          "masteredConcepts": ["anatomy.skeletal.fibula.location", "anatomy.skeletal.fibula.role"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_fibula_id;
+
+  IF v_level_fibula_id IS NULL THEN
+    SELECT id INTO v_level_fibula_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'fibula';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_fibula_id,
+    $json${
+      "fibula_location_001": {
+        "acceptedAnswers": ["latéral", "lateral", "externe"],
+        "explanation": "La fibula est l'os latéral de la jambe, situé du côté externe par rapport au tibia qui est médial.",
+        "conceptKey": "anatomy.skeletal.fibula.location",
+        "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
+      },
+      "fibula_articulation_001": {
+        "correctIndex": 0,
+        "explanation": "La fibula s'articule avec le tibia par la syndesmose tibio-fibulaire (en haut et en bas). Cette union fibreuse assure la stabilité de la cheville.",
+        "conceptKey": "anatomy.skeletal.fibula.role",
+        "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Vertèbre type ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'vertebre_type',
+    'La vertèbre type',
+    5,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "La vertèbre type",
+          "subtitle": "Structure de base",
+          "body": "Une vertèbre type est composée d'un corps vertébral en avant, d'un arc vertébral en arrière, et de divers processus (épineux, transverses, articulaires). L'ensemble délimite le canal vertébral qui protège la moelle épinière.",
+          "fact": "La colonne vertébrale humaine comprend 33 à 34 vertèbres réparties en 5 régions : cervicale, thoracique, lombaire, sacrée et coccygienne.",
+          "visual": {"type": "placeholder", "alt": "Schéma d'une vertèbre type"},
+          "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "vertebre_canal_001",
+          "prompt": "Le canal vertébral est délimité par le ___ en avant et l'arc vertébral en arrière.",
+          "hint": "C'est la partie massive et cylindrique de la vertèbre.",
+          "xpReward": 10
+        },
+        {
+          "type": "recall",
+          "questionKey": "vertebre_cervicales_001",
+          "question": "Combien de vertèbres cervicales y a-t-il normalement ?",
+          "options": ["7", "5", "12", "4"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Vertèbre type terminée",
+          "body": "Tu connais maintenant la structure de base d'une vertèbre.",
+          "masteredConcepts": ["anatomy.skeletal.vertebra.structure", "anatomy.skeletal.vertebra.cervical_count"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_vertebre_id;
+
+  IF v_level_vertebre_id IS NULL THEN
+    SELECT id INTO v_level_vertebre_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'vertebre_type';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_vertebre_id,
+    $json${
+      "vertebre_canal_001": {
+        "acceptedAnswers": ["corps vertébral", "corps"],
+        "explanation": "Le canal vertébral est délimité en avant par le corps vertébral et en arrière par l'arc vertébral. Il contient et protège la moelle épinière.",
+        "conceptKey": "anatomy.skeletal.vertebra.structure",
+        "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
+      },
+      "vertebre_cervicales_001": {
+        "correctIndex": 0,
+        "explanation": "Il y a normalement 7 vertèbres cervicales (C1 à C7). C1 est l'atlas, C2 est l'axis. Elles permettent les mouvements de la tête.",
+        "conceptKey": "anatomy.skeletal.vertebra.cervical_count",
+        "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Les côtes ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'cotes',
+    'Les côtes',
+    6,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les côtes",
+          "subtitle": "Cage thoracique",
+          "body": "Les côtes sont des os plats et incurvés qui forment la cage thoracique. On distingue les vraies côtes (articulées directement avec le sternum), les fausses côtes (reliées au sternum via le cartilage costal commun) et les côtes flottantes (sans attache sternale).",
+          "fact": "Nous avons 12 paires de côtes, soit 24 côtes au total, qui protègent le cœur, les poumons et les gros vaisseaux.",
+          "visual": {"type": "placeholder", "alt": "Schéma de la cage thoracique"},
+          "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "cotes_vraies_001",
+          "prompt": "Les ___ premières paires de côtes sont appelées vraies côtes car elles s'articulent directement avec le sternum.",
+          "hint": "Un chiffre entre 5 et 10.",
+          "xpReward": 10
+        },
+        {
+          "type": "recall",
+          "questionKey": "cotes_flottantes_001",
+          "question": "Que sont les côtes flottantes ?",
+          "options": ["Les côtes 11 et 12 qui n'atteignent pas le sternum", "Les côtes qui se déplacent à l'inspiration", "Les côtes articulées avec le cartilage costal commun", "Les côtes cervicales surnuméraires"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Côtes terminées",
+          "body": "Tu connais maintenant la classification des côtes.",
+          "masteredConcepts": ["anatomy.skeletal.ribs.classification", "anatomy.skeletal.ribs.count"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_cotes_id;
+
+  IF v_level_cotes_id IS NULL THEN
+    SELECT id INTO v_level_cotes_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'cotes';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_cotes_id,
+    $json${
+      "cotes_vraies_001": {
+        "acceptedAnswers": ["7", "sept"],
+        "explanation": "Les 7 premières paires de côtes sont les vraies côtes : elles s'articulent directement avec le sternum via leur cartilage costal propre. Les côtes 8 à 10 sont les fausses côtes et les côtes 11 et 12 sont les côtes flottantes.",
+        "conceptKey": "anatomy.skeletal.ribs.classification",
+        "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
+      },
+      "cotes_flottantes_001": {
+        "correctIndex": 0,
+        "explanation": "Les côtes flottantes (11e et 12e paires) n'ont aucune attache au sternum, ni directe ni indirecte. Elles se terminent librement dans les muscles de la paroi abdominale.",
+        "conceptKey": "anatomy.skeletal.ribs.count",
+        "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Skeletal system"}]
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;

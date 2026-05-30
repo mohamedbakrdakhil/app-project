@@ -42,9 +42,19 @@ export const CompleteStepSchema = z.object({
   masteredConcepts: z.array(z.string()).default([]),
 });
 
+export const FillBlankStepSchema = z.object({
+  type: z.literal("fill_blank"),
+  questionKey: z.string().min(1),
+  prompt: z.string().min(1),
+  blanks: z.number().int().positive().default(1),
+  hint: z.string().optional(),
+  xpReward: z.number().int().nonnegative().default(10),
+});
+
 export const LessonStepSchema = z.discriminatedUnion("type", [
   IntroStepSchema,
   RecallStepSchema,
+  FillBlankStepSchema,
   CompleteStepSchema,
 ]);
 
@@ -63,7 +73,19 @@ export const AnswerEntrySchema = z.object({
   sourceRefs: z.array(SourceRefSchema).default([]),
 });
 
-export const LevelAnswerKeySchema = z.record(z.string(), AnswerEntrySchema);
+export const FillBlankAnswerEntrySchema = z.object({
+  acceptedAnswers: z.array(z.string().min(1)).min(1),
+  explanation: z.string().min(1),
+  conceptKey: z.string().min(1),
+  sourceRefs: z.array(SourceRefSchema).default([]),
+});
+
+export const AnyAnswerEntrySchema = z.union([
+  AnswerEntrySchema,
+  FillBlankAnswerEntrySchema,
+]);
+
+export const LevelAnswerKeySchema = z.record(z.string(), AnyAnswerEntrySchema);
 
 export type SourceRef = z.infer<typeof SourceRefSchema>;
 export type LessonContentPublic = z.infer<typeof LessonContentPublicSchema>;
@@ -71,4 +93,7 @@ export type LevelAnswerKey = z.infer<typeof LevelAnswerKeySchema>;
 export type LessonStep = z.infer<typeof LessonStepSchema>;
 export type IntroStep = z.infer<typeof IntroStepSchema>;
 export type RecallStep = z.infer<typeof RecallStepSchema>;
+export type FillBlankStep = z.infer<typeof FillBlankStepSchema>;
 export type CompleteStep = z.infer<typeof CompleteStepSchema>;
+export type AnswerEntry = z.infer<typeof AnswerEntrySchema>;
+export type FillBlankAnswerEntry = z.infer<typeof FillBlankAnswerEntrySchema>;
