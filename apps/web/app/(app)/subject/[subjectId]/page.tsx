@@ -7,6 +7,11 @@ interface Props {
   params: Promise<{ subjectId: string }>;
 }
 
+export async function generateMetadata({ params }: Props) {
+  const { subjectId } = await params;
+  return { title: subjectId.charAt(0).toUpperCase() + subjectId.slice(1) };
+}
+
 export default async function SubjectPage({ params }: Props) {
   const user = await getSessionUser();
   if (!user) redirect("/login");

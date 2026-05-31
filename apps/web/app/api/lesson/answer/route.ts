@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { XP_RULES } from "@masteri/core";
+import { rateLimit } from "@/lib/rate-limit";
 
 const AnswerBodySchema = z.object({
   attemptId: z.string().uuid(),
@@ -19,6 +20,11 @@ export async function POST(request: NextRequest) {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const rl = rateLimit(`lesson_answer:${user.id}`, 60, 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
 
     const body = AnswerBodySchema.parse(await request.json());
     const admin = createSupabaseAdminClient();

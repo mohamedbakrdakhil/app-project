@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { generateLessonDraft } from "@/lib/ai/generate-content";
+import { rateLimit } from "@/lib/rate-limit";
 
 const GenerateBodySchema = z.object({
   subjectId: z.string().min(1),
@@ -15,6 +16,15 @@ export async function POST(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Rate limit: 5 AI generations per user per hour
+  const rl = rateLimit(`ai_gen:${user.id}`, 5, 60 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded", retryAfterSeconds: rl.retryAfterSeconds },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+    );
+  }
 
   // Only allow if ANTHROPIC_API_KEY is configured
   if (!process.env.ANTHROPIC_API_KEY) {

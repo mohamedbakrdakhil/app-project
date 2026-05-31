@@ -1,4 +1,7 @@
+export const metadata = { title: "Leçon" };
+
 import LessonPlayer from "@/components/lesson/LessonPlayer";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
@@ -15,7 +18,9 @@ export default async function LessonPage({ params }: Props) {
       <div className="mb-4">
         <a href="/home" className="text-sm" style={{ color: "var(--text-muted)" }}>← Retour</a>
       </div>
-      <LessonPlayer levelId={levelId} />
+      <ErrorBoundary>
+        <LessonPlayer levelId={levelId} />
+      </ErrorBoundary>
     </div>
   );
 }

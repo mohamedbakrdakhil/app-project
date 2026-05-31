@@ -1,3 +1,5 @@
+export const metadata = { title: "Accueil" };
+
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";

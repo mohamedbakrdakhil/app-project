@@ -1,9 +1,24 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Masteri",
-  description: "Apprenez les matières médicales, niveau par niveau.",
+  title: { default: "Masteri", template: "%s | Masteri" },
+  description: "Apprenez les matières médicales en sessions courtes, interactives et mesurables.",
+  keywords: ["médecine", "anatomie", "apprentissage", "étudiants", "QCM", "révisions"],
+  authors: [{ name: "Masteri" }],
+  robots: { index: false, follow: false },
+  openGraph: {
+    title: "Masteri",
+    description: "Maîtrisez les sciences médicales, niveau par niveau.",
+    type: "website",
+    locale: "fr_FR",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
