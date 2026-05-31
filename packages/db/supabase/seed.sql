@@ -3286,3 +3286,539 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Ticket 14: Immunologie subject + innate_adaptive_immunity chapter
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, is_published)
+VALUES (
+  'immunology',
+  'Immunologie',
+  'Immunology',
+  '🛡️',
+  '#27ae60',
+  'Découvre les mécanismes de défense de l''organisme.',
+  8,
+  true
+)
+ON CONFLICT (id) DO UPDATE SET
+  name_fr = EXCLUDED.name_fr, name_en = EXCLUDED.name_en, icon = EXCLUDED.icon,
+  color = EXCLUDED.color, description_fr = EXCLUDED.description_fr,
+  order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('immunology', 'innate_adaptive_immunity', 'Immunité innée et adaptative', 'Les deux branches du système immunitaire.', '🛡️', 1, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET
+  title_fr = EXCLUDED.title_fr, description_fr = EXCLUDED.description_fr,
+  icon = EXCLUDED.icon, order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+-- ============================================================
+-- Physiologie — cardiac_cycle chapter (order_index 3)
+-- ============================================================
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('physiology', 'cardiac_cycle', 'Le cycle cardiaque', 'Systole, diastole et régulation du débit cardiaque.', '❤️', 3, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET
+  title_fr = EXCLUDED.title_fr, description_fr = EXCLUDED.description_fr,
+  icon = EXCLUDED.icon, order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+-- ============================================================
+-- Immunologie — innate_adaptive_immunity — 3 niveaux
+-- ============================================================
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_immu1_id uuid;
+  v_level_immu2_id uuid;
+  v_level_immu3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'immunology' AND slug = 'innate_adaptive_immunity';
+
+  -- ---- Niveau 1: L'immunité innée ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'immu_innate',
+    'L''immunité innée',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "L'immunité innée",
+          "subtitle": "La première ligne de défense",
+          "body": "L'immunité innée constitue la première ligne de défense non spécifique de l'organisme. Elle comprend les barrières physiques (peau, muqueuses), les phagocytes (neutrophiles, macrophages), les cellules NK (Natural Killer) et le système du complément. Cette réponse est rapide et non spécifique : les récepteurs de reconnaissance de motifs (PRR) reconnaissent les motifs moléculaires associés aux pathogènes (PAMP).",
+          "sourceRefs": [{"title": "Open educational immunology references", "type": "open_educational", "chapter": "Innate immunity"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "immu_macro_001",
+          "question": "Quelle est la principale cellule phagocytaire dans les tissus ?",
+          "options": ["Le neutrophile", "Le macrophage", "La cellule NK", "Le lymphocyte T"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "immu_prr_001",
+          "prompt": "Les ___ reconnaissent les motifs moléculaires associés aux pathogènes (PAMP).",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Immunité innée terminée",
+          "body": "Tu connais maintenant les composants principaux de l'immunité innée.",
+          "masteredConcepts": ["immunology.innate.phagocytes", "immunology.innate.prr_pamp"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_immu1_id;
+
+  IF v_level_immu1_id IS NULL THEN
+    SELECT id INTO v_level_immu1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'immu_innate';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_immu1_id,
+    $json${
+      "immu_macro_001": {
+        "correctIndex": 1,
+        "explanation": "Le macrophage est la principale cellule phagocytaire résidente dans les tissus. Les neutrophiles sont les phagocytes les plus abondants dans le sang mais migrent vers les tissus lors de l'inflammation.",
+        "conceptKey": "immunology.innate.phagocytes.macrophage",
+        "sourceRefs": []
+      },
+      "immu_prr_001": {
+        "acceptedAnswers": ["récepteurs PRR", "PRR"],
+        "explanation": "Les récepteurs PRR (Pattern Recognition Receptors) reconnaissent les PAMP (Pathogen-Associated Molecular Patterns), des motifs moléculaires conservés présents sur les pathogènes.",
+        "conceptKey": "immunology.innate.prr_pamp",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: L'immunité adaptative ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'immu_adaptive',
+    'L''immunité adaptative',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "L'immunité adaptative",
+          "subtitle": "Spécificité et mémoire",
+          "body": "L'immunité adaptative est plus lente mais spécifique et dotée de mémoire. Les lymphocytes T comprennent les CD4+ (auxiliaires) et les CD8+ (cytotoxiques). Les lymphocytes B se différencient en plasmocytes qui produisent les anticorps. Le CMH de classe I est exprimé par toutes les cellules nucléées ; le CMH de classe II est exprimé par les cellules présentatrices d'antigènes (CPA).",
+          "sourceRefs": [{"title": "Open educational immunology references", "type": "open_educational", "chapter": "Adaptive immunity"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "immu_dc_001",
+          "question": "Quelle cellule présente les antigènes via le CMH de classe II ?",
+          "options": ["Le lymphocyte T CD8+", "Le neutrophile", "La cellule dendritique", "La cellule NK"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "immu_b_001",
+          "prompt": "Les lymphocytes ___ produisent les anticorps après différenciation en plasmocytes.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Immunité adaptative terminée",
+          "body": "Tu connais maintenant les acteurs clés de l'immunité adaptative.",
+          "masteredConcepts": ["immunology.adaptive.lymphocytes_t", "immunology.adaptive.lymphocytes_b", "immunology.adaptive.mhc"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_immu2_id;
+
+  IF v_level_immu2_id IS NULL THEN
+    SELECT id INTO v_level_immu2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'immu_adaptive';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_immu2_id,
+    $json${
+      "immu_dc_001": {
+        "correctIndex": 2,
+        "explanation": "La cellule dendritique est la principale cellule présentatrice d'antigènes (CPA) professionnelle. Elle exprime le CMH de classe II et active les lymphocytes T CD4+.",
+        "conceptKey": "immunology.adaptive.antigen_presentation",
+        "sourceRefs": []
+      },
+      "immu_b_001": {
+        "acceptedAnswers": ["B"],
+        "explanation": "Les lymphocytes B se différencient en plasmocytes sous l'action des lymphocytes T auxiliaires CD4+. Les plasmocytes produisent et sécrètent des anticorps spécifiques de l'antigène.",
+        "conceptKey": "immunology.adaptive.b_lymphocytes",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Déficiences et hypersensibilités ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'immu_clinical',
+    'Déficiences et hypersensibilités',
+    3,
+    'medium',
+    150,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Hypersensibilités",
+          "subtitle": "Les 4 types",
+          "body": "Il existe 4 types d'hypersensibilité : type I (médiée par les IgE, allergie immédiate/anaphylaxie), type II (cytotoxique, médiée par les IgG/IgM), type III (complexes immuns), type IV (retardée, médiée par les lymphocytes T).",
+          "sourceRefs": [{"title": "Open educational immunology references", "type": "open_educational", "chapter": "Hypersensitivity"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "immu_anaph_001",
+          "scenario": "Un enfant de 8 ans développe une urticaire généralisée et un œdème laryngé 15 minutes après avoir mangé des cacahuètes. La pression artérielle chute à 80/50 mmHg.",
+          "question": "Quel type d'hypersensibilité est en cause ?",
+          "options": ["Hypersensibilité de type II", "Hypersensibilité de type III", "Hypersensibilité de type I (anaphylaxie)", "Hypersensibilité de type IV"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "immu_ige_001",
+          "question": "Quelle immunoglobuline est impliquée dans l'hypersensibilité de type I ?",
+          "options": ["IgE", "IgG", "IgM", "IgA"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Hypersensibilités terminées",
+          "body": "Tu connais maintenant les 4 types d'hypersensibilité et leurs mécanismes.",
+          "masteredConcepts": ["immunology.hypersensitivity.type_i", "immunology.hypersensitivity.ige"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_immu3_id;
+
+  IF v_level_immu3_id IS NULL THEN
+    SELECT id INTO v_level_immu3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'immu_clinical';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_immu3_id,
+    $json${
+      "immu_anaph_001": {
+        "correctIndex": 2,
+        "explanation": "L'apparition rapide (15 min) après exposition à un allergène alimentaire avec urticaire, œdème laryngé et choc hypotensif est caractéristique d'une anaphylaxie (hypersensibilité de type I médiée par les IgE).",
+        "conceptKey": "immunology.hypersensitivity.type_i",
+        "sourceRefs": []
+      },
+      "immu_ige_001": {
+        "correctIndex": 0,
+        "explanation": "Les IgE se fixent sur les mastocytes et basophiles. Lors d'une seconde exposition à l'allergène, la dégranulation massive libère histamine et médiateurs de l'inflammation.",
+        "conceptKey": "immunology.hypersensitivity.ige",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Physiologie — cardiac_cycle — 3 niveaux
+-- ============================================================
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_card1_id uuid;
+  v_level_card2_id uuid;
+  v_level_card3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'physiology' AND slug = 'cardiac_cycle';
+
+  -- ---- Niveau 1: Systole et diastole ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'card_systole_diastole',
+    'Systole et diastole',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Systole et diastole",
+          "subtitle": "Le cycle cardiaque",
+          "body": "Le cycle cardiaque comprend la diastole (remplissage passif des ventricules) et la systole (contraction et éjection du sang). Les bruits du cœur : B1 correspond à la fermeture des valves mitrale et tricuspide (début de la systole) ; B2 correspond à la fermeture des valves aortique et pulmonaire (début de la diastole). La fraction d'éjection normale du ventricule gauche est de 55 à 70 %.",
+          "sourceRefs": [{"title": "Open educational physiology references", "type": "open_educational", "chapter": "Cardiac cycle"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "card_b1_001",
+          "question": "À quoi correspond le bruit du cœur B1 ?",
+          "options": ["La fermeture des valves mitrale et tricuspide", "La fermeture des valves aortique et pulmonaire", "L'ouverture des valves sigmoïdes", "La contraction auriculaire"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "card_ef_001",
+          "prompt": "La fraction d'éjection normale du ventricule gauche est d'environ ___ à 70%.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Systole et diastole terminées",
+          "body": "Tu connais maintenant les phases du cycle cardiaque et les bruits du cœur.",
+          "masteredConcepts": ["physiology.cardiac_cycle.systole_diastole", "physiology.cardiac_cycle.heart_sounds"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_card1_id;
+
+  IF v_level_card1_id IS NULL THEN
+    SELECT id INTO v_level_card1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'card_systole_diastole';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_card1_id,
+    $json${
+      "card_b1_001": {
+        "correctIndex": 0,
+        "explanation": "B1 (lub) correspond à la fermeture des valves mitrale et tricuspide au début de la systole ventriculaire. B2 (dub) correspond à la fermeture des valves aortique et pulmonaire à la fin de la systole.",
+        "conceptKey": "physiology.cardiac_cycle.heart_sounds.b1",
+        "sourceRefs": []
+      },
+      "card_ef_001": {
+        "acceptedAnswers": ["55"],
+        "explanation": "La fraction d'éjection (FE) normale du ventricule gauche est de 55 à 70 %. Une FE < 50 % est considérée comme altérée et peut indiquer une insuffisance cardiaque systolique.",
+        "conceptKey": "physiology.cardiac_cycle.ejection_fraction",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Le débit cardiaque ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'card_output',
+    'Le débit cardiaque',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le débit cardiaque",
+          "subtitle": "DC = FC × VES",
+          "body": "Le débit cardiaque (DC) est le produit de la fréquence cardiaque (FC) par le volume d'éjection systolique (VES) : DC = FC × VES. Au repos, il est d'environ 5 L/min. La loi de Frank-Starling stipule qu'une augmentation de la précharge (retour veineux) entraîne une augmentation du VES. Une augmentation de la postcharge diminue le VES. La contractilité peut être augmentée par des agents inotropes positifs.",
+          "sourceRefs": [{"title": "Open educational physiology references", "type": "open_educational", "chapter": "Cardiac output"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "card_frank_001",
+          "question": "Que stipule la loi de Frank-Starling ?",
+          "options": ["Une augmentation de la postcharge augmente le volume d'éjection", "Une augmentation de la précharge augmente le volume d'éjection", "La fréquence cardiaque détermine seule le débit cardiaque", "La contractilité est indépendante de la précharge"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "card_dc_001",
+          "prompt": "Le débit cardiaque est le produit de la fréquence cardiaque par le volume d'___ systolique.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Débit cardiaque terminé",
+          "body": "Tu connais maintenant les déterminants du débit cardiaque.",
+          "masteredConcepts": ["physiology.cardiac_cycle.cardiac_output", "physiology.cardiac_cycle.frank_starling"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_card2_id;
+
+  IF v_level_card2_id IS NULL THEN
+    SELECT id INTO v_level_card2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'card_output';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_card2_id,
+    $json${
+      "card_frank_001": {
+        "correctIndex": 1,
+        "explanation": "La loi de Frank-Starling stipule que plus le ventricule est rempli en diastole (précharge élevée), plus la force de contraction systolique est importante, augmentant ainsi le volume d'éjection.",
+        "conceptKey": "physiology.cardiac_cycle.frank_starling",
+        "sourceRefs": []
+      },
+      "card_dc_001": {
+        "acceptedAnswers": ["éjection"],
+        "explanation": "Le débit cardiaque (DC) = Fréquence cardiaque (FC) × Volume d'éjection systolique (VES). Au repos : ~70 bpm × ~70 mL = ~5 L/min.",
+        "conceptKey": "physiology.cardiac_cycle.cardiac_output_formula",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: L'ECG normal ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'card_ecg',
+    'L''ECG normal',
+    3,
+    'medium',
+    150,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "L'ECG normal",
+          "subtitle": "Ondes P, QRS, T",
+          "body": "L'électrocardiogramme (ECG) enregistre l'activité électrique du cœur. L'onde P correspond à la dépolarisation auriculaire. Le complexe QRS correspond à la dépolarisation ventriculaire. L'onde T correspond à la repolarisation ventriculaire. L'intervalle PR normal est de 0,12 à 0,20 s et la durée du QRS est normalement < 0,12 s.",
+          "sourceRefs": [{"title": "Open educational physiology references", "type": "open_educational", "chapter": "ECG"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "card_ecg_001",
+          "scenario": "Un homme de 65 ans consulte pour palpitations. L'ECG montre une fréquence cardiaque irrégulière à 110/min, absence d'ondes P identifiables et des complexes QRS fins et irréguliers.",
+          "question": "Quel trouble du rythme est le plus probable ?",
+          "options": ["Tachycardie sinusale", "Fibrillation auriculaire", "Flutter auriculaire", "Bloc auriculo-ventriculaire"],
+          "difficulty": "hard",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "card_qrs_001",
+          "question": "Que représente le complexe QRS ?",
+          "options": ["La dépolarisation auriculaire", "La repolarisation auriculaire", "La dépolarisation ventriculaire", "La repolarisation ventriculaire"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "ECG terminé",
+          "body": "Tu connais maintenant les éléments de base de l'ECG normal.",
+          "masteredConcepts": ["physiology.cardiac_cycle.ecg_waves", "physiology.cardiac_cycle.ecg_intervals"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_card3_id;
+
+  IF v_level_card3_id IS NULL THEN
+    SELECT id INTO v_level_card3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'card_ecg';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_card3_id,
+    $json${
+      "card_ecg_001": {
+        "correctIndex": 1,
+        "explanation": "La triade ECG : rythme irrégulier, absence d'ondes P identifiables et QRS fins irréguliers est caractéristique d'une fibrillation auriculaire (FA). C'est le trouble du rythme soutenu le plus fréquent.",
+        "conceptKey": "physiology.cardiac_cycle.ecg.atrial_fibrillation",
+        "sourceRefs": []
+      },
+      "card_qrs_001": {
+        "correctIndex": 2,
+        "explanation": "Le complexe QRS représente la dépolarisation ventriculaire (activation électrique des ventricules). Sa durée normale est < 0,12 s (3 petits carreaux).",
+        "conceptKey": "physiology.cardiac_cycle.ecg.qrs",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
