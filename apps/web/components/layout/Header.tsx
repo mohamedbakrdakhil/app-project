@@ -1,4 +1,5 @@
 import Link from "next/link";
+import NotificationBell from "./NotificationBell";
 
 export default function Header() {
   return (
@@ -6,6 +7,7 @@ export default function Header() {
       <Link href="/home" className="text-lg font-bold" style={{ color: "var(--anatomy)" }}>
         Masteri
       </Link>
+      <NotificationBell />
     </header>
   );
 }

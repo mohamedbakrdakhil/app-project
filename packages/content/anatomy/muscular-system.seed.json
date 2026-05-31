@@ -1,0 +1,138 @@
+{
+  "chapter": {
+    "subjectId": "anatomy",
+    "slug": "muscular_system",
+    "titleFr": "Système musculaire",
+    "descriptionFr": "Les muscles, leurs insertions et leurs fonctions principales.",
+    "icon": "💪",
+    "orderIndex": 2
+  },
+  "levels": [
+    {
+      "slug": "biceps_brachial",
+      "titleFr": "Le muscle biceps brachial",
+      "orderIndex": 1,
+      "difficulty": "easy",
+      "xpReward": 100,
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le muscle biceps brachial",
+          "subtitle": "Flexion et supination",
+          "body": "Le biceps brachial est un muscle de la loge antérieure du bras. Il possède deux chefs d'origine : la longue portion et la courte portion. Sa principale fonction est la flexion du coude et la supination de l'avant-bras.",
+          "fact": "Le biceps brachial est le muscle le plus souvent représenté dans les illustrations anatomiques populaires."
+        },
+        {
+          "type": "recall",
+          "questionKey": "biceps_role_001",
+          "question": "Quel est le rôle principal du biceps brachial ?",
+          "options": [
+            "Flexion du coude et supination de l'avant-bras",
+            "Extension du coude",
+            "Abduction de l'épaule",
+            "Flexion du genou"
+          ],
+          "correctIndex": 0,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "biceps_chefs_001",
+          "prompt": "Le muscle biceps brachial possède ___ chefs d'origine.",
+          "acceptedAnswers": ["deux", "2"],
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Biceps terminé",
+          "body": "Tu connais maintenant le rôle et la structure du biceps brachial.",
+          "masteredConcepts": ["anatomy.muscular.biceps.role", "anatomy.muscular.biceps.heads"]
+        }
+      ]
+    },
+    {
+      "slug": "quadriceps_femoral",
+      "titleFr": "Le muscle quadriceps fémoral",
+      "orderIndex": 2,
+      "difficulty": "easy",
+      "xpReward": 100,
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le muscle quadriceps fémoral",
+          "subtitle": "Extension du genou",
+          "body": "Le quadriceps fémoral est le plus volumineux muscle du corps humain. Il est composé de quatre chefs : le droit fémoral, le vaste latéral, le vaste médial et le vaste intermédiaire. Sa principale fonction est l'extension du genou.",
+          "fact": "Le quadriceps fémoral peut exercer une force de plusieurs centaines de kilogrammes lors des sauts et sprints."
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "quadriceps_chefs_001",
+          "prompt": "Le quadriceps fémoral est composé de ___ chefs musculaires.",
+          "acceptedAnswers": ["quatre", "4"],
+          "xpReward": 15
+        },
+        {
+          "type": "recall",
+          "questionKey": "quadriceps_fonction_001",
+          "question": "Quelle est la fonction principale du quadriceps fémoral ?",
+          "options": [
+            "Extension du genou",
+            "Flexion du genou",
+            "Abduction de la hanche",
+            "Rotation interne du genou"
+          ],
+          "correctIndex": 0,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Quadriceps terminé",
+          "body": "Tu connais maintenant la structure et la fonction du quadriceps fémoral.",
+          "masteredConcepts": ["anatomy.muscular.quadriceps.structure", "anatomy.muscular.quadriceps.function"]
+        }
+      ]
+    },
+    {
+      "slug": "diaphragme",
+      "titleFr": "Le diaphragme",
+      "orderIndex": 3,
+      "difficulty": "easy",
+      "xpReward": 100,
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le diaphragme",
+          "subtitle": "Muscle principal de la respiration",
+          "body": "Le diaphragme est le muscle respiratoire principal. Il sépare la cavité thoracique de la cavité abdominale. À l'inspiration, il s'abaisse, augmentant le volume thoracique et permettant l'entrée d'air dans les poumons.",
+          "fact": "Le diaphragme se contracte environ 20 000 fois par jour lors de la respiration normale."
+        },
+        {
+          "type": "recall",
+          "questionKey": "diaphragme_role_001",
+          "question": "Quel est le rôle principal du diaphragme ?",
+          "options": [
+            "Muscle principal de la respiration",
+            "Muscle de la déglutition",
+            "Muscle de la mastication",
+            "Muscle de la phonation"
+          ],
+          "correctIndex": 0,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "diaphragme_separation_001",
+          "prompt": "Le diaphragme sépare la cavité ___ de la cavité abdominale.",
+          "acceptedAnswers": ["thoracique", "thorax"],
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Diaphragme terminé",
+          "body": "Tu connais maintenant le rôle et la localisation du diaphragme.",
+          "masteredConcepts": ["anatomy.muscular.diaphragm.role", "anatomy.muscular.diaphragm.location"]
+        }
+      ]
+    }
+  ]
+}

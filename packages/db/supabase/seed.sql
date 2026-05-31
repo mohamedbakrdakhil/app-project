@@ -541,3 +541,280 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Seed: Muscular system chapter + 3 levels
+-- ============================================================
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES (
+  'anatomy',
+  'muscular_system',
+  'Système musculaire',
+  'Les muscles, leurs insertions et leurs fonctions principales.',
+  '💪',
+  2,
+  true
+)
+ON CONFLICT (subject_id, slug) DO UPDATE SET
+  title_fr = EXCLUDED.title_fr,
+  description_fr = EXCLUDED.description_fr,
+  icon = EXCLUDED.icon,
+  order_index = EXCLUDED.order_index,
+  is_published = EXCLUDED.is_published;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_biceps_id uuid;
+  v_level_quadriceps_id uuid;
+  v_level_diaphragme_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'anatomy' AND slug = 'muscular_system';
+
+  -- ---- Biceps brachial ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'biceps_brachial',
+    'Le muscle biceps brachial',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le muscle biceps brachial",
+          "subtitle": "Flexion et supination",
+          "body": "Le biceps brachial est un muscle de la loge antérieure du bras. Il possède deux chefs d'origine : la longue portion (s'attachant au tubercule supra-glénoïdal) et la courte portion (s'attachant au processus coracoïde). Sa principale fonction est la flexion du coude et la supination de l'avant-bras.",
+          "fact": "Le biceps brachial est le muscle le plus souvent représenté dans les illustrations anatomiques populaires.",
+          "visual": {"type": "placeholder", "alt": "biceps brachial"},
+          "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Muscular system"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "biceps_role_001",
+          "question": "Quel est le rôle principal du biceps brachial ?",
+          "options": ["Flexion du coude et supination de l'avant-bras", "Extension du coude", "Abduction de l'épaule", "Flexion du genou"],
+          "correctIndex": 0,
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "biceps_chefs_001",
+          "prompt": "Le muscle biceps brachial possède ___ chefs d'origine.",
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Biceps terminé",
+          "body": "Tu connais maintenant le rôle et la structure du biceps brachial.",
+          "masteredConcepts": ["anatomy.muscular.biceps.role", "anatomy.muscular.biceps.heads"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_biceps_id;
+
+  IF v_level_biceps_id IS NULL THEN
+    SELECT id INTO v_level_biceps_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'biceps_brachial';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_biceps_id,
+    $json${
+      "biceps_role_001": {
+        "correctIndex": 0,
+        "explanation": "Le biceps brachial est principalement fléchisseur du coude et supinateur de l'avant-bras. Il agit aussi comme faible fléchisseur de l'épaule.",
+        "conceptKey": "anatomy.muscular.biceps.role",
+        "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Muscular system"}]
+      },
+      "biceps_chefs_001": {
+        "acceptedAnswers": ["deux", "2"],
+        "explanation": "Le biceps brachial possède deux chefs : la longue portion et la courte portion, d'où son nom (bi = deux, ceps = têtes).",
+        "conceptKey": "anatomy.muscular.biceps.heads",
+        "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Muscular system"}]
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Quadriceps fémoral ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'quadriceps_femoral',
+    'Le muscle quadriceps fémoral',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le muscle quadriceps fémoral",
+          "subtitle": "Extension du genou",
+          "body": "Le quadriceps fémoral est le plus volumineux muscle du corps humain. Il est composé de quatre chefs : le droit fémoral, le vaste latéral, le vaste médial et le vaste intermédiaire. Sa principale fonction est l'extension du genou.",
+          "fact": "Le quadriceps fémoral peut exercer une force de plusieurs centaines de kilogrammes lors des sauts et sprints.",
+          "visual": {"type": "placeholder", "alt": "quadriceps femoral"},
+          "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Muscular system"}]
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "quadriceps_chefs_001",
+          "prompt": "Le quadriceps fémoral est composé de ___ chefs musculaires.",
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "recall",
+          "questionKey": "quadriceps_fonction_001",
+          "question": "Quelle est la fonction principale du quadriceps fémoral ?",
+          "options": ["Extension du genou", "Flexion du genou", "Abduction de la hanche", "Rotation interne du genou"],
+          "correctIndex": 0,
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Quadriceps terminé",
+          "body": "Tu connais maintenant la structure et la fonction du quadriceps fémoral.",
+          "masteredConcepts": ["anatomy.muscular.quadriceps.structure", "anatomy.muscular.quadriceps.function"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_quadriceps_id;
+
+  IF v_level_quadriceps_id IS NULL THEN
+    SELECT id INTO v_level_quadriceps_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'quadriceps_femoral';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_quadriceps_id,
+    $json${
+      "quadriceps_chefs_001": {
+        "acceptedAnswers": ["quatre", "4"],
+        "explanation": "Le quadriceps fémoral comprend quatre chefs : le droit fémoral, le vaste latéral, le vaste médial et le vaste intermédiaire.",
+        "conceptKey": "anatomy.muscular.quadriceps.structure",
+        "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Muscular system"}]
+      },
+      "quadriceps_fonction_001": {
+        "correctIndex": 0,
+        "explanation": "Le quadriceps fémoral est l'extenseur du genou. Il joue un rôle essentiel dans la marche, la course, et toutes les activités nécessitant l'extension du membre inférieur.",
+        "conceptKey": "anatomy.muscular.quadriceps.function",
+        "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Muscular system"}]
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Diaphragme ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'diaphragme',
+    'Le diaphragme',
+    3,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le diaphragme",
+          "subtitle": "Muscle principal de la respiration",
+          "body": "Le diaphragme est le muscle respiratoire principal. Il sépare la cavité thoracique de la cavité abdominale. À l'inspiration, il s'abaisse, augmentant le volume thoracique et permettant l'entrée d'air dans les poumons.",
+          "fact": "Le diaphragme se contracte environ 20 000 fois par jour lors de la respiration normale.",
+          "visual": {"type": "placeholder", "alt": "diaphragme"},
+          "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Muscular system"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "diaphragme_role_001",
+          "question": "Quel est le rôle principal du diaphragme ?",
+          "options": ["Muscle principal de la respiration", "Muscle de la déglutition", "Muscle de la mastication", "Muscle de la phonation"],
+          "correctIndex": 0,
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "diaphragme_separation_001",
+          "prompt": "Le diaphragme sépare la cavité ___ de la cavité abdominale.",
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Diaphragme terminé",
+          "body": "Tu connais maintenant le rôle et la localisation du diaphragme.",
+          "masteredConcepts": ["anatomy.muscular.diaphragm.role", "anatomy.muscular.diaphragm.location"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_diaphragme_id;
+
+  IF v_level_diaphragme_id IS NULL THEN
+    SELECT id INTO v_level_diaphragme_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'diaphragme';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_diaphragme_id,
+    $json${
+      "diaphragme_role_001": {
+        "correctIndex": 0,
+        "explanation": "Le diaphragme est le muscle principal de la respiration. Sa contraction abaisse le plancher thoracique et crée une dépression permettant l'entrée d'air dans les poumons.",
+        "conceptKey": "anatomy.muscular.diaphragm.role",
+        "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Muscular system"}]
+      },
+      "diaphragme_separation_001": {
+        "acceptedAnswers": ["thoracique", "thorax"],
+        "explanation": "Le diaphragme est une cloison musculo-tendineuse qui sépare la cavité thoracique (contenant le coeur et les poumons) de la cavité abdominale.",
+        "conceptKey": "anatomy.muscular.diaphragm.location",
+        "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Muscular system"}]
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;

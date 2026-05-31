@@ -48,4 +48,14 @@ test.describe("API routes (unauthenticated)", () => {
     const res = await request.put("/api/profile/goal", { data: { dailyGoal: 5 } });
     expect(res.status()).toBe(401);
   });
+
+  test("league returns 401 without auth", async ({ request }) => {
+    const res = await request.get("/api/league");
+    expect(res.status()).toBe(401);
+  });
+
+  test("notifications returns 401 without auth", async ({ request }) => {
+    const res = await request.get("/api/notifications");
+    expect(res.status()).toBe(401);
+  });
 });

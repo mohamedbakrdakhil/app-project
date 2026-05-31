@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { calculateLessonScore, evaluateBadges, type BadgeConditionType } from "@masteri/core";
+import { calculateLessonScore, evaluateBadges, getWeekStart, type BadgeConditionType } from "@masteri/core";
 
 const CompleteBodySchema = z.object({
   attemptId: z.string().uuid(),
@@ -144,7 +144,37 @@ export async function POST(request: NextRequest) {
       await admin.from("user_badges").insert(
         newBadgeIds.map((badge_id) => ({ user_id: user.id, badge_id }))
       );
+
+      // Create badge notifications
+      const { data: badgeDetails } = await admin
+        .from("badges")
+        .select("id, name_fr, icon")
+        .in("id", newBadgeIds);
+
+      await admin.from("notifications").insert(
+        (badgeDetails ?? []).map((b) => ({
+          user_id: user.id,
+          type: "badge_earned",
+          title: `Badge débloqué : ${b.icon} ${b.name_fr}`,
+          body: `Tu as obtenu le badge "${b.name_fr}". Continue comme ça !`,
+        }))
+      );
     }
+
+    // Track weekly XP
+    const weekStart = getWeekStart();
+    const { data: weeklyData } = await admin
+      .from("weekly_xp")
+      .select("xp_earned")
+      .eq("user_id", user.id)
+      .eq("week_start", weekStart)
+      .maybeSingle();
+    await admin.from("weekly_xp").upsert({
+      user_id: user.id,
+      week_start: weekStart,
+      xp_earned: (weeklyData?.xp_earned ?? 0) + scoreResult.totalXp,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id,week_start" });
 
     const { data: level } = await admin
       .from("levels")

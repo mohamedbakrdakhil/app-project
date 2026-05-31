@@ -6,6 +6,7 @@ import { getSessionUser } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import Card from "@/components/ui/Card";
 import XPHistoryChart from "@/components/ui/XPHistoryChart";
+import Link from "next/link";
 import LogoutButton from "./LogoutButton";
 import DailyGoalSetter from "./DailyGoalSetter";
 
@@ -133,6 +134,9 @@ export default async function ProfilePage() {
         </Card>
       )}
       <LogoutButton />
+      <Link href="/admin" className="block text-center text-sm py-2" style={{ color: "var(--text-muted)" }}>
+        ⚙️ Administration
+      </Link>
     </div>
   );
 }
