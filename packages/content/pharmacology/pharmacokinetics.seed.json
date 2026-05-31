@@ -1,0 +1,174 @@
+{
+  "chapter": {
+    "subject_id": "pharmacology",
+    "slug": "pharmacokinetics",
+    "title_fr": "Pharmacocinétique",
+    "description_fr": "Le devenir du médicament dans l'organisme : ADME.",
+    "icon": "💊",
+    "order_index": 1
+  },
+  "levels": [
+    {
+      "slug": "pk_absorption",
+      "title_fr": "L'absorption des médicaments",
+      "order_index": 1,
+      "difficulty": "easy",
+      "xp_reward": 100,
+      "content_public": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "L'absorption des médicaments",
+            "body": "L'absorption = passage du médicament depuis le site d'administration jusqu'à la circulation sanguine. Voies : orale (première passe hépatique), sublinguale (évite la première passe), IV (biodisponibilité 100%), transdermique. Biodisponibilité = fraction absorbée active.",
+            "sourceRefs": []
+          },
+          {
+            "type": "recall",
+            "questionKey": "pk_bioavail_001",
+            "question": "Quelle voie d'administration donne une biodisponibilité de 100% ?",
+            "options": ["La voie intraveineuse", "La voie orale", "La voie transdermique", "La voie sublinguale"],
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "pk_firstpass_001",
+            "prompt": "L'effet de première passe ___ réduit la biodisponibilité des médicaments administrés par voie orale.",
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Absorption maîtrisée",
+            "body": "Tu connais maintenant les bases de l'absorption des médicaments.",
+            "masteredConcepts": ["pharmacology.pk.absorption.bioavailability", "pharmacology.pk.absorption.first_pass"]
+          }
+        ]
+      },
+      "answer_key": {
+        "pk_bioavail_001": {
+          "correctIndex": 0,
+          "explanation": "La voie intraveineuse (IV) administre le médicament directement dans la circulation sanguine, garantissant une biodisponibilité de 100%.",
+          "conceptKey": "pharmacology.pk.absorption.bioavailability",
+          "sourceRefs": []
+        },
+        "pk_firstpass_001": {
+          "acceptedAnswers": ["hépatique", "hepatique"],
+          "explanation": "L'effet de première passe hépatique correspond au métabolisme du médicament par le foie avant d'atteindre la circulation systémique.",
+          "conceptKey": "pharmacology.pk.absorption.first_pass",
+          "sourceRefs": []
+        }
+      }
+    },
+    {
+      "slug": "pk_distribution",
+      "title_fr": "La distribution et l'élimination",
+      "order_index": 2,
+      "difficulty": "medium",
+      "xp_reward": 120,
+      "content_public": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "Distribution et élimination",
+            "body": "Distribution : le médicament se répartit dans les compartiments (sanguin, interstitiel, intracellulaire). Volume de distribution (Vd). Liaison aux protéines plasmatiques (albumine). Élimination : rénale (filtration glomérulaire) et hépatique (métabolisme). Demi-vie (t½) = temps pour réduire la concentration de moitié.",
+            "sourceRefs": []
+          },
+          {
+            "type": "recall",
+            "questionKey": "pk_halflife_001",
+            "question": "Que représente la demi-vie (t½) d'un médicament ?",
+            "options": ["Le temps nécessaire pour réduire la concentration plasmatique de moitié", "La durée totale d'action du médicament", "Le temps d'absorption depuis le site d'administration", "La durée de la première passe hépatique"],
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "pk_albumin_001",
+            "prompt": "Les médicaments se lient principalement à l'___ dans le plasma.",
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Distribution maîtrisée",
+            "body": "Tu comprends maintenant la distribution et l'élimination des médicaments.",
+            "masteredConcepts": ["pharmacology.pk.distribution.volume", "pharmacology.pk.elimination.half_life"]
+          }
+        ]
+      },
+      "answer_key": {
+        "pk_halflife_001": {
+          "correctIndex": 0,
+          "explanation": "La demi-vie (t½) est le temps nécessaire pour que la concentration plasmatique du médicament soit réduite de moitié.",
+          "conceptKey": "pharmacology.pk.elimination.half_life",
+          "sourceRefs": []
+        },
+        "pk_albumin_001": {
+          "acceptedAnswers": ["albumine"],
+          "explanation": "L'albumine est la principale protéine plasmatique qui fixe les médicaments, influençant leur distribution et leur élimination.",
+          "conceptKey": "pharmacology.pk.distribution.volume",
+          "sourceRefs": []
+        }
+      }
+    },
+    {
+      "slug": "pk_interactions",
+      "title_fr": "Les interactions médicamenteuses",
+      "order_index": 3,
+      "difficulty": "hard",
+      "xp_reward": 150,
+      "content_public": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 6,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "Les interactions médicamenteuses",
+            "body": "Interactions = modifications de l'effet d'un médicament par un autre. Types : pharmacocinétiques (modification ADME, ex: induction/inhibition des CYP450) et pharmacodynamiques (synergie, antagonisme). Interactions importantes : AVK + AINS (risque hémorragique), IMAO + antidépresseurs (syndrome sérotoninergique).",
+            "sourceRefs": []
+          },
+          {
+            "type": "recall",
+            "questionKey": "drug_interaction_001",
+            "question": "Quel est le mécanisme principal des interactions via le cytochrome P450 ?",
+            "options": ["Induction ou inhibition enzymatique modifiant le métabolisme d'autres médicaments", "Compétition pour la liaison aux récepteurs", "Précipitation chimique dans le sang", "Modification de l'absorption gastrique"],
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "drug_cyp_001",
+            "prompt": "Le cytochrome ___ est le principal système enzymatique impliqué dans le métabolisme hépatique des médicaments.",
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Interactions maîtrisées",
+            "body": "Tu comprends maintenant les principales interactions médicamenteuses.",
+            "masteredConcepts": ["pharmacology.pk.interactions.cyp450", "pharmacology.pk.interactions.types"]
+          }
+        ]
+      },
+      "answer_key": {
+        "drug_interaction_001": {
+          "correctIndex": 0,
+          "explanation": "Le cytochrome P450 peut être induit (augmentation du métabolisme → diminution de l'effet) ou inhibé (diminution du métabolisme → augmentation de l'effet et risque de toxicité).",
+          "conceptKey": "pharmacology.pk.interactions.cyp450",
+          "sourceRefs": []
+        },
+        "drug_cyp_001": {
+          "acceptedAnswers": ["P450", "CYP450", "p450"],
+          "explanation": "Le cytochrome P450 (CYP450) est le principal système enzymatique du métabolisme hépatique des médicaments.",
+          "conceptKey": "pharmacology.pk.interactions.types",
+          "sourceRefs": []
+        }
+      }
+    }
+  ]
+}

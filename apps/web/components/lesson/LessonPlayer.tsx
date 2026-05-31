@@ -1,12 +1,13 @@
 "use client";
 import { useState, useCallback } from "react";
-import type { LessonContentPublic, RecallStep, FillBlankStep } from "@masteri/core";
+import type { LessonContentPublic, RecallStep, FillBlankStep, ClinicalCaseStep } from "@masteri/core";
 import { BADGE_LABELS } from "@/lib/badges";
 import IntroStepView from "./IntroStep";
 import RecallStepView from "./RecallStep";
 import FillBlankStepView from "./FillBlankStep";
 import CompleteStepView from "./CompleteStep";
 import ImageLabelStepView from "./ImageLabelStep";
+import ClinicalCaseStepView from "./ClinicalCaseStep";
 
 interface LessonPlayerProps {
   levelId: string;
@@ -222,6 +223,13 @@ export default function LessonPlayer({ levelId }: LessonPlayerProps) {
       )}
       {step.type === "complete" && <CompleteStepView step={step} onNext={handleNext} />}
       {step.type === "image_label" && <ImageLabelStepView step={step} onNext={handleNext} />}
+      {step.type === "clinical_case" && (
+        <ClinicalCaseStepWrapper
+          step={step}
+          onAnswer={handleRecallAnswer}
+          onNext={handleNext}
+        />
+      )}
     </div>
   );
 }
@@ -240,4 +248,12 @@ function FillBlankStepWrapper({ step, onAnswer, onNext }: {
   onNext: () => void;
 }) {
   return <FillBlankStepView step={step} onAnswer={onAnswer} onNext={onNext} />;
+}
+
+function ClinicalCaseStepWrapper({ step, onAnswer, onNext }: {
+  step: ClinicalCaseStep;
+  onAnswer: (questionKey: string, selectedIndex: number) => Promise<{ isCorrect: boolean; correctIndex: number; explanation: string; xpEarned: number }>;
+  onNext: () => void;
+}) {
+  return <ClinicalCaseStepView step={step} onAnswer={onAnswer} onNext={onNext} />;
 }

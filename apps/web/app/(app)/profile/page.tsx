@@ -134,6 +134,9 @@ export default async function ProfilePage() {
         </Card>
       )}
       <LogoutButton />
+      <Link href="/onboarding" className="block text-center text-sm py-2" style={{ color: "var(--text-muted)" }}>
+        🎯 Personnaliser mon parcours
+      </Link>
       <Link href="/admin" className="block text-center text-sm py-2" style={{ color: "var(--text-muted)" }}>
         ⚙️ Administration
       </Link>

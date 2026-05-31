@@ -82,4 +82,11 @@ test.describe("API routes (unauthenticated)", () => {
     });
     expect(res.status()).toBe(401);
   });
+
+  test("onboarding/complete returns 401 without auth", async ({ request }) => {
+    const res = await request.post("/api/onboarding/complete", {
+      data: { dailyGoal: 5, preferredSubjects: [] },
+    });
+    expect(res.status()).toBe(401);
+  });
 });

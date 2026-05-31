@@ -64,12 +64,23 @@ export const ImageLabelStepSchema = z.object({
   sourceRefs: z.array(SourceRefSchema).default([]),
 });
 
+export const ClinicalCaseStepSchema = z.object({
+  type: z.literal("clinical_case"),
+  questionKey: z.string().min(1),
+  scenario: z.string().min(10),
+  question: z.string().min(1),
+  options: z.tuple([z.string(), z.string(), z.string(), z.string()]),
+  xpReward: z.number().int().nonnegative().default(25),
+  difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
+});
+
 export const LessonStepSchema = z.discriminatedUnion("type", [
   IntroStepSchema,
   RecallStepSchema,
   FillBlankStepSchema,
   CompleteStepSchema,
   ImageLabelStepSchema,
+  ClinicalCaseStepSchema,
 ]);
 
 export const LessonContentPublicSchema = z.object({
@@ -112,3 +123,4 @@ export type CompleteStep = z.infer<typeof CompleteStepSchema>;
 export type AnswerEntry = z.infer<typeof AnswerEntrySchema>;
 export type FillBlankAnswerEntry = z.infer<typeof FillBlankAnswerEntrySchema>;
 export type ImageLabelStep = z.infer<typeof ImageLabelStepSchema>;
+export type ClinicalCaseStep = z.infer<typeof ClinicalCaseStepSchema>;
