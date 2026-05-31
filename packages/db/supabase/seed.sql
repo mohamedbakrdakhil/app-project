@@ -3822,3 +3822,539 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Ticket 15: Endocrinologie subject + hormones_intro chapter
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, is_published)
+VALUES (
+  'endocrinology',
+  'Endocrinologie',
+  'Endocrinology',
+  '⚗️',
+  '#e67e22',
+  'Les glandes endocrines et leurs hormones.',
+  9,
+  true
+)
+ON CONFLICT (id) DO UPDATE SET
+  name_fr = EXCLUDED.name_fr, name_en = EXCLUDED.name_en, icon = EXCLUDED.icon,
+  color = EXCLUDED.color, description_fr = EXCLUDED.description_fr,
+  order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('endocrinology', 'hormones_intro', 'Les hormones — introduction', 'Mécanismes d''action et grandes familles hormonales.', '⚗️', 1, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET
+  title_fr = EXCLUDED.title_fr, description_fr = EXCLUDED.description_fr,
+  icon = EXCLUDED.icon, order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+-- ============================================================
+-- Endocrinologie — hormones_intro — 3 niveaux
+-- ============================================================
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_endo1_id uuid;
+  v_level_endo2_id uuid;
+  v_level_endo3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'endocrinology' AND slug = 'hormones_intro';
+
+  -- ---- Niveau 1: Types d'hormones ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'endo_hormone_types',
+    'Types d''hormones',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Types d'hormones",
+          "subtitle": "Les 3 grandes familles",
+          "body": "Il existe trois grandes familles d'hormones. Les hormones peptidiques sont hydrophiles, se lient à des récepteurs membranaires et agissent via des seconds messagers (AMPc, IP3). Les hormones stéroïdes sont lipophiles, traversent la membrane cellulaire et se lient à des récepteurs intracellulaires pour moduler l'expression génique. Les hormones aminées sont dérivées de la tyrosine : les catécholamines (adrénaline, noradrénaline) et les hormones thyroïdiennes (T3, T4).",
+          "sourceRefs": [{"title": "Open educational endocrinology references", "type": "open_educational", "chapter": "Hormone types"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "endo_steroid_001",
+          "question": "Les hormones stéroïdes agissent via :",
+          "options": ["Des récepteurs membranaires", "Des récepteurs intracellulaires", "Des seconds messagers AMPc", "La voie des MAP kinases"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "endo_steroid_solub_001",
+          "prompt": "Les hormones stéroïdes sont ___ ce qui leur permet de traverser la membrane cellulaire.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Types d'hormones terminés",
+          "body": "Tu connais maintenant les trois grandes familles d'hormones.",
+          "masteredConcepts": ["endocrinology.hormones.peptide", "endocrinology.hormones.steroid", "endocrinology.hormones.amine"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_endo1_id;
+
+  IF v_level_endo1_id IS NULL THEN
+    SELECT id INTO v_level_endo1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'endo_hormone_types';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_endo1_id,
+    $json${
+      "endo_steroid_001": {
+        "correctIndex": 1,
+        "explanation": "Les hormones stéroïdes sont lipophiles, elles traversent la membrane plasmique et se lient à des récepteurs intracellulaires (cytoplasmiques ou nucléaires) qui modulent directement l'expression génique.",
+        "conceptKey": "endocrinology.hormones.steroid.mechanism",
+        "sourceRefs": []
+      },
+      "endo_steroid_solub_001": {
+        "acceptedAnswers": ["liposolubles", "lipophiles", "liposoluble", "lipophile"],
+        "explanation": "Les hormones stéroïdes sont liposolubles (lipophiles), ce qui leur permet de traverser librement la bicouche phospholipidique de la membrane cellulaire.",
+        "conceptKey": "endocrinology.hormones.steroid.lipophilic",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Le pancréas endocrine ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'endo_pancreas',
+    'Le pancréas endocrine',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le pancréas endocrine",
+          "subtitle": "Insuline, glucagon et diabète",
+          "body": "Le pancréas endocrine est organisé en îlots de Langerhans. Les cellules α sécrètent le glucagon, qui élève la glycémie par glycogénolyse et néoglucogenèse. Les cellules β sécrètent l'insuline, qui abaisse la glycémie en favorisant l'entrée du glucose dans les cellules. Le diabète de type 1 résulte de la destruction auto-immune des cellules β. Le diabète de type 2 est caractérisé par une résistance à l'insuline avec une sécrétion compensatrice progressive.",
+          "sourceRefs": [{"title": "Open educational endocrinology references", "type": "open_educational", "chapter": "Pancreas"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "endo_insulin_001",
+          "question": "Quelle hormone abaisse la glycémie ?",
+          "options": ["L'insuline", "Le glucagon", "Le cortisol", "L'adrénaline"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "endo_dt1_001",
+          "prompt": "Le diabète de type 1 est dû à la destruction auto-immune des cellules ___ du pancréas.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Pancréas endocrine terminé",
+          "body": "Tu connais maintenant les hormones pancréatiques et les bases du diabète.",
+          "masteredConcepts": ["endocrinology.pancreas.insulin", "endocrinology.pancreas.glucagon", "endocrinology.pancreas.diabetes"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_endo2_id;
+
+  IF v_level_endo2_id IS NULL THEN
+    SELECT id INTO v_level_endo2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'endo_pancreas';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_endo2_id,
+    $json${
+      "endo_insulin_001": {
+        "correctIndex": 0,
+        "explanation": "L'insuline est la seule hormone hypoglycémiante. Elle est sécrétée par les cellules β des îlots de Langerhans en réponse à l'élévation de la glycémie.",
+        "conceptKey": "endocrinology.pancreas.insulin.hypoglycemia",
+        "sourceRefs": []
+      },
+      "endo_dt1_001": {
+        "acceptedAnswers": ["bêta", "β", "beta"],
+        "explanation": "Le diabète de type 1 est une maladie auto-immune où les lymphocytes T détruisent spécifiquement les cellules β des îlots de Langerhans, supprimant la sécrétion d'insuline.",
+        "conceptKey": "endocrinology.pancreas.diabetes_type1",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: La thyroïde ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'endo_thyroid',
+    'La thyroïde',
+    3,
+    'medium',
+    150,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "La thyroïde",
+          "subtitle": "T3, T4 et régulation",
+          "body": "La glande thyroïde sécrète T3 (triiodothyronine) et T4 (thyroxine), qui régulent le métabolisme basal, la fréquence cardiaque et la thermorégulation. La TSH (thyréostimuline) sécrétée par l'hypophyse stimule la thyroïde selon un rétrocontrôle négatif. L'hypothyroïdie se manifeste par fatigue, prise de poids et bradycardie. L'hyperthyroïdie se manifeste par amaigrissement, tachycardie et intolérance à la chaleur.",
+          "sourceRefs": [{"title": "Open educational endocrinology references", "type": "open_educational", "chapter": "Thyroid"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "endo_thyroid_cc_001",
+          "scenario": "Une femme de 35 ans consulte pour fatigue, prise de poids de 5 kg en 3 mois, constipation et frilosité. À l'examen: bradycardie à 52/min, peau sèche, réflexes lents. TSH: 45 mUI/L (N: 0.4-4).",
+          "question": "Quel diagnostic est le plus probable ?",
+          "options": ["Hyperthyroïdie", "Hypothyroïdie", "Diabète de type 2", "Insuffisance surrénalienne"],
+          "difficulty": "easy",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "endo_tsh_001",
+          "question": "Une TSH élevée signifie que la thyroïde est :",
+          "options": ["Hyperactive (hyperthyroïdie)", "Normalement fonctionnelle", "Sous-stimulée par la thyroïde (hypothyroïdie)", "En train de produire trop de T3/T4"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Thyroïde terminée",
+          "body": "Tu connais maintenant le fonctionnement de la glande thyroïde et ses pathologies.",
+          "masteredConcepts": ["endocrinology.thyroid.t3_t4", "endocrinology.thyroid.tsh", "endocrinology.thyroid.hypothyroidism", "endocrinology.thyroid.hyperthyroidism"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_endo3_id;
+
+  IF v_level_endo3_id IS NULL THEN
+    SELECT id INTO v_level_endo3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'endo_thyroid';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_endo3_id,
+    $json${
+      "endo_thyroid_cc_001": {
+        "correctIndex": 1,
+        "explanation": "Le tableau clinique (fatigue, prise de poids, bradycardie, frilosité, peau sèche, réflexes lents) associé à une TSH très élevée (45 mUI/L) est caractéristique d'une hypothyroïdie. La TSH élevée reflète la tentative hypophysaire de stimuler une thyroïde insuffisante.",
+        "conceptKey": "endocrinology.thyroid.hypothyroidism.diagnosis",
+        "sourceRefs": []
+      },
+      "endo_tsh_001": {
+        "correctIndex": 2,
+        "explanation": "En cas d'hypothyroïdie, les taux de T3/T4 sont bas. En réponse, l'hypophyse augmente la sécrétion de TSH pour tenter de stimuler la thyroïde. Une TSH élevée est donc le signe biologique d'une hypothyroïdie (rétrocontrôle négatif rompu).",
+        "conceptKey": "endocrinology.thyroid.tsh.feedback",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Ticket 15: Pharmacologie — chapitre pharmacodynamics
+-- ============================================================
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('pharmacology', 'pharmacodynamics', 'Pharmacodynamie', 'Mécanismes d''action des médicaments sur l''organisme.', '💊', 2, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET
+  title_fr = EXCLUDED.title_fr, description_fr = EXCLUDED.description_fr,
+  icon = EXCLUDED.icon, order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+-- ============================================================
+-- Pharmacodynamie — 3 niveaux
+-- ============================================================
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_pd1_id uuid;
+  v_level_pd2_id uuid;
+  v_level_pd3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'pharmacology' AND slug = 'pharmacodynamics';
+
+  -- ---- Niveau 1: Les récepteurs pharmacologiques ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'pd_receptors',
+    'Les récepteurs pharmacologiques',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les récepteurs pharmacologiques",
+          "subtitle": "Agonistes, antagonistes, affinité",
+          "body": "L'interaction médicament-récepteur est à la base de la pharmacodynamie. Un agoniste active le récepteur et produit un effet pharmacologique. Un antagoniste se fixe au récepteur sans l'activer et bloque l'action des agonistes. Un agoniste partiel active le récepteur mais avec un effet maximal inférieur à celui d'un agoniste complet. L'affinité mesure la force de liaison au récepteur, l'efficacité mesure la réponse maximale obtenue. La courbe dose-réponse décrit la relation entre la concentration et l'effet. L'EC50 est la concentration produisant 50 % de l'effet maximal.",
+          "sourceRefs": [{"title": "Open educational pharmacology references", "type": "open_educational", "chapter": "Pharmacodynamics receptors"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "pd_antag_001",
+          "question": "Comment agit un antagoniste ?",
+          "options": ["Il bloque le récepteur sans l'activer", "Il active le récepteur avec un effet maximal", "Il active le récepteur partiellement", "Il détruit le récepteur"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "pd_ec50_001",
+          "prompt": "L'EC50 est la concentration d'un médicament produisant ___ % de l'effet maximal.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Récepteurs pharmacologiques terminés",
+          "body": "Tu connais maintenant les notions d'agonisme, d'antagonisme et de courbe dose-réponse.",
+          "masteredConcepts": ["pharmacology.pd.agonist", "pharmacology.pd.antagonist", "pharmacology.pd.ec50"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_pd1_id;
+
+  IF v_level_pd1_id IS NULL THEN
+    SELECT id INTO v_level_pd1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'pd_receptors';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_pd1_id,
+    $json${
+      "pd_antag_001": {
+        "correctIndex": 0,
+        "explanation": "Un antagoniste occupe le site de liaison du récepteur sans l'activer (efficacité nulle). Il bloque ainsi l'accès aux agonistes et supprime ou réduit leur effet.",
+        "conceptKey": "pharmacology.pd.antagonist.mechanism",
+        "sourceRefs": []
+      },
+      "pd_ec50_001": {
+        "acceptedAnswers": ["50"],
+        "explanation": "L'EC50 (concentration efficace médiane) est la concentration d'un médicament qui produit 50 % de son effet maximal. Elle est un indicateur de la puissance du médicament.",
+        "conceptKey": "pharmacology.pd.ec50.definition",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: La relation dose-effet ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'pd_dose_effect',
+    'La relation dose-effet',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "La relation dose-effet",
+          "subtitle": "Fenêtre thérapeutique et index thérapeutique",
+          "body": "La courbe log dose-réponse a une forme sigmoïde. La fenêtre thérapeutique est l'intervalle entre la dose minimale efficace et la dose toxique. L'index thérapeutique (IT) = DL50 / DE50, où DL50 est la dose létale médiane et DE50 la dose efficace médiane. Un IT étroit impose une surveillance rapprochée des concentrations plasmatiques. Exemples de médicaments à IT étroit : la digoxine, la warfarine et le lithium.",
+          "sourceRefs": [{"title": "Open educational pharmacology references", "type": "open_educational", "chapter": "Dose-response relationship"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "pd_ti_001",
+          "question": "Quelle est la formule de l'index thérapeutique ?",
+          "options": ["ED50 / LD50", "LD50 × ED50", "LD50 / ED50", "EC50 / LD50"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "pd_narrow_ti_001",
+          "prompt": "Un médicament à index thérapeutique ___ nécessite une surveillance étroite des concentrations.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Relation dose-effet terminée",
+          "body": "Tu connais maintenant la fenêtre thérapeutique et l'index thérapeutique.",
+          "masteredConcepts": ["pharmacology.pd.therapeutic_window", "pharmacology.pd.therapeutic_index"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_pd2_id;
+
+  IF v_level_pd2_id IS NULL THEN
+    SELECT id INTO v_level_pd2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'pd_dose_effect';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_pd2_id,
+    $json${
+      "pd_ti_001": {
+        "correctIndex": 2,
+        "explanation": "L'index thérapeutique = DL50 / DE50. Plus cet index est élevé, plus le médicament est sûr. Un IT étroit (digoxine, warfarine, lithium) impose une surveillance des concentrations plasmatiques.",
+        "conceptKey": "pharmacology.pd.therapeutic_index.formula",
+        "sourceRefs": []
+      },
+      "pd_narrow_ti_001": {
+        "acceptedAnswers": ["étroit", "faible"],
+        "explanation": "Un médicament à index thérapeutique étroit (ou faible) présente un risque de toxicité élevé si la concentration dépasse légèrement la fenêtre thérapeutique. Une surveillance régulière des taux plasmatiques est indispensable.",
+        "conceptKey": "pharmacology.pd.narrow_therapeutic_index",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Cibles thérapeutiques ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'pd_targets',
+    'Cibles thérapeutiques',
+    3,
+    'medium',
+    150,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Cibles thérapeutiques",
+          "subtitle": "Récepteurs, enzymes, canaux, transporteurs",
+          "body": "Les médicaments agissent sur 4 types principaux de cibles : (1) les récepteurs (agonistes/antagonistes), (2) les enzymes — les IEC (inhibiteurs de l'enzyme de conversion) bloquent la formation d'angiotensine II, les statines inhibent la HMG-CoA réductase, (3) les canaux ioniques — les inhibiteurs calciques (amlodipine) bloquent les canaux Ca²⁺ voltage-dépendants, les anesthésiques locaux bloquent les canaux Na⁺, (4) les transporteurs — les ISRS bloquent le recaptage de la sérotonine.",
+          "sourceRefs": [{"title": "Open educational pharmacology references", "type": "open_educational", "chapter": "Drug targets"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "pd_amlod_cc_001",
+          "scenario": "Un patient hypertendu est traité par amlodipine, un inhibiteur des canaux calciques. Après 2 semaines, sa pression artérielle passe de 160/95 à 130/80 mmHg. Il présente des œdèmes des chevilles.",
+          "question": "Quel est le mécanisme d'action de l'amlodipine ?",
+          "options": ["Inhibition de l'enzyme de conversion", "Blocage des récepteurs bêta-adrénergiques", "Blocage des canaux calciques voltage-dépendants", "Inhibition de la pompe Na+/K+-ATPase"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "pd_ssri_001",
+          "question": "Les ISRS agissent sur :",
+          "options": ["Le récepteur sérotoninergique 5-HT2", "Le transporteur de recapture de la sérotonine", "La monoamine oxydase", "Le récepteur dopaminergique D2"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Cibles thérapeutiques terminées",
+          "body": "Tu connais maintenant les 4 grandes classes de cibles thérapeutiques.",
+          "masteredConcepts": ["pharmacology.pd.targets.receptors", "pharmacology.pd.targets.enzymes", "pharmacology.pd.targets.channels", "pharmacology.pd.targets.transporters"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_pd3_id;
+
+  IF v_level_pd3_id IS NULL THEN
+    SELECT id INTO v_level_pd3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'pd_targets';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_pd3_id,
+    $json${
+      "pd_amlod_cc_001": {
+        "correctIndex": 2,
+        "explanation": "L'amlodipine est un inhibiteur calcique (antagoniste des canaux Ca²⁺ voltage-dépendants de type L) qui provoque une vasodilatation artérielle. Les œdèmes des chevilles sont un effet secondaire fréquent lié à la vasodilatation préférentielle des artérioles.",
+        "conceptKey": "pharmacology.pd.targets.calcium_channel_blockers",
+        "sourceRefs": []
+      },
+      "pd_ssri_001": {
+        "correctIndex": 1,
+        "explanation": "Les ISRS (inhibiteurs sélectifs de la recapture de la sérotonine) bloquent le transporteur SERT (serotonin transporter), empêchant la recapture de la sérotonine dans la synapse et augmentant ainsi sa disponibilité.",
+        "conceptKey": "pharmacology.pd.targets.ssri_sert",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
