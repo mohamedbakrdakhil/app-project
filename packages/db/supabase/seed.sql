@@ -2750,3 +2750,539 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Ticket 13: Neurologie subject + nervous_system_intro chapter
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, is_published)
+VALUES (
+  'neurology',
+  'Neurologie',
+  'Neurology',
+  '🧠',
+  '#9b59b6',
+  'Explore le système nerveux central et périphérique.',
+  7,
+  true
+)
+ON CONFLICT (id) DO UPDATE SET
+  name_fr = EXCLUDED.name_fr, name_en = EXCLUDED.name_en, icon = EXCLUDED.icon,
+  color = EXCLUDED.color, description_fr = EXCLUDED.description_fr,
+  order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('neurology', 'nervous_system_intro', 'Introduction au système nerveux', 'Organisation et fonctionnement du SNC et SNP.', '🧠', 1, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET
+  title_fr = EXCLUDED.title_fr, description_fr = EXCLUDED.description_fr,
+  icon = EXCLUDED.icon, order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+-- ============================================================
+-- Neurologie — nervous_system_intro — 3 niveaux
+-- ============================================================
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_neuro1_id uuid;
+  v_level_neuro2_id uuid;
+  v_level_neuro3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'neurology' AND slug = 'nervous_system_intro';
+
+  -- ---- Niveau 1: Organisation du système nerveux ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'neuro_organization',
+    'Organisation du système nerveux',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Organisation du système nerveux",
+          "subtitle": "SNC et SNP",
+          "body": "Le système nerveux central (SNC) comprend le cerveau et la moelle épinière. Le système nerveux périphérique (SNP) comprend les nerfs crâniens, les nerfs spinaux et le système nerveux végétatif (autonome). Le neurone est l'unité fonctionnelle du système nerveux : il est composé d'un soma, d'un axone et de dendrites.",
+          "fact": "Le cerveau humain contient environ 86 milliards de neurones.",
+          "sourceRefs": [{"title": "Open educational neuroscience references", "type": "open_educational", "chapter": "Nervous system organization", "note": "Référence générale, contenu réécrit de manière originale."}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "neuro_myelin_001",
+          "question": "Quel est le rôle principal de la myéline ?",
+          "options": ["Nourrir le neurone", "Produire des neurotransmetteurs", "Accélérer la conduction nerveuse", "Former les synapses"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "neuro_snc_001",
+          "prompt": "Le système nerveux central comprend le cerveau et la ___ épinière.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Organisation terminée",
+          "body": "Tu connais maintenant l'organisation générale du système nerveux.",
+          "masteredConcepts": ["neurology.organization.snc_snp", "neurology.organization.neuron"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_neuro1_id;
+
+  IF v_level_neuro1_id IS NULL THEN
+    SELECT id INTO v_level_neuro1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'neuro_organization';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_neuro1_id,
+    $json${
+      "neuro_myelin_001": {
+        "correctIndex": 2,
+        "explanation": "La myéline est une gaine lipidique qui entoure les axones et accélère la conduction nerveuse par le phénomène de conduction saltatoire.",
+        "conceptKey": "neurology.organization.myelin",
+        "sourceRefs": []
+      },
+      "neuro_snc_001": {
+        "acceptedAnswers": ["moelle"],
+        "explanation": "Le système nerveux central comprend le cerveau et la moelle épinière, qui est protégée par la colonne vertébrale.",
+        "conceptKey": "neurology.organization.snc",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Le potentiel d'action ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'neuro_action_potential',
+    'Le potentiel d''action',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le potentiel d'action",
+          "subtitle": "Signal électrique du neurone",
+          "body": "Le potentiel de repos d'une cellule nerveuse est d'environ -70 mV. Lors de la dépolarisation, les ions Na+ entrent dans la cellule. Lors de la repolarisation, les ions K+ sortent. Le potentiel d'action obéit à la loi du tout ou rien : le seuil d'activation est d'environ -55 mV.",
+          "fact": "Un potentiel d'action se propage à une vitesse pouvant atteindre 120 m/s dans les fibres myélinisées.",
+          "sourceRefs": [{"title": "Open educational neuroscience references", "type": "open_educational", "chapter": "Action potential"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "ap_depol_ion_001",
+          "question": "Quel ion entre principalement dans la cellule lors de la dépolarisation ?",
+          "options": ["Sodium (Na+)", "Potassium (K+)", "Calcium (Ca2+)", "Chlorure (Cl-)"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "ap_resting_001",
+          "prompt": "Le potentiel de repos d'une cellule nerveuse est d'environ ___ mV.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Potentiel d'action terminé",
+          "body": "Tu connais maintenant les bases électriques du potentiel d'action.",
+          "masteredConcepts": ["neurology.action_potential.depolarization", "neurology.action_potential.resting_potential"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_neuro2_id;
+
+  IF v_level_neuro2_id IS NULL THEN
+    SELECT id INTO v_level_neuro2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'neuro_action_potential';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_neuro2_id,
+    $json${
+      "ap_depol_ion_001": {
+        "correctIndex": 0,
+        "explanation": "Lors de la dépolarisation, les canaux sodiques (Na+) voltage-dépendants s'ouvrent, laissant entrer massivement le sodium dans la cellule.",
+        "conceptKey": "neurology.action_potential.depolarization",
+        "sourceRefs": []
+      },
+      "ap_resting_001": {
+        "acceptedAnswers": ["-70"],
+        "explanation": "Le potentiel de repos d'une cellule nerveuse est d'environ -70 mV, maintenu par la pompe Na+/K+-ATPase.",
+        "conceptKey": "neurology.action_potential.resting_potential",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: La synapse et la neurotransmission ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'neuro_synapse',
+    'La synapse et la neurotransmission',
+    3,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "La synapse",
+          "subtitle": "Communication entre neurones",
+          "body": "La synapse comprend le terminal présynaptique, la fente synaptique et le récepteur postsynaptique. Les principaux neurotransmetteurs sont l'acétylcholine (ACh), la dopamine, la sérotonine et le GABA. Le GABA est le principal neurotransmetteur inhibiteur du système nerveux central.",
+          "sourceRefs": [{"title": "Open educational neuroscience references", "type": "open_educational", "chapter": "Synapse and neurotransmission"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "synapse_benzo_001",
+          "scenario": "Un patient de 25 ans est traité par benzodiazépines pour un trouble anxieux. Ces médicaments potentialisent l'action du GABA sur les récepteurs GABA-A.",
+          "question": "Quel est l'effet attendu sur l'activité neuronale ?",
+          "options": ["Augmentation de l'excitabilité neuronale", "Diminution de l'excitabilité neuronale", "Aucun effet sur l'excitabilité", "Augmentation de la libération de dopamine"],
+          "xpReward": 25,
+          "difficulty": "easy"
+        },
+        {
+          "type": "recall",
+          "questionKey": "synapse_inhib_001",
+          "question": "Quel est le principal neurotransmetteur inhibiteur du système nerveux central ?",
+          "options": ["Acétylcholine", "Dopamine", "Sérotonine", "GABA"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Synapse terminée",
+          "body": "Tu connais maintenant les bases de la transmission synaptique.",
+          "masteredConcepts": ["neurology.synapse.structure", "neurology.synapse.neurotransmitters", "neurology.synapse.gaba"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_neuro3_id;
+
+  IF v_level_neuro3_id IS NULL THEN
+    SELECT id INTO v_level_neuro3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'neuro_synapse';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_neuro3_id,
+    $json${
+      "synapse_benzo_001": {
+        "correctIndex": 1,
+        "explanation": "Le GABA est inhibiteur. Les benzodiazépines potentialisent son action, augmentant l'entrée de Cl- dans les neurones et diminuant ainsi leur excitabilité.",
+        "conceptKey": "neurology.synapse.gaba_inhibition",
+        "sourceRefs": []
+      },
+      "synapse_inhib_001": {
+        "correctIndex": 3,
+        "explanation": "Le GABA (acide gamma-aminobutyrique) est le principal neurotransmetteur inhibiteur du SNC, présent dans environ 30% des synapses cérébrales.",
+        "conceptKey": "neurology.synapse.gaba",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Ticket 13: Anatomie — Système nerveux périphérique chapter
+-- ============================================================
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('anatomy', 'peripheral_nervous', 'Système nerveux périphérique', 'Les nerfs crâniens, spinaux et le système nerveux autonome.', '🫀', 3, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET
+  title_fr = EXCLUDED.title_fr, description_fr = EXCLUDED.description_fr,
+  icon = EXCLUDED.icon, order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+-- ============================================================
+-- Anatomie — peripheral_nervous — 3 niveaux
+-- ============================================================
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_pns1_id uuid;
+  v_level_pns2_id uuid;
+  v_level_pns3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'anatomy' AND slug = 'peripheral_nervous';
+
+  -- ---- Niveau 1: Les nerfs crâniens ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'pns_cranial_nerves',
+    'Les nerfs crâniens',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les nerfs crâniens",
+          "subtitle": "12 paires de nerfs",
+          "body": "Il existe 12 paires de nerfs crâniens. Parmi les principaux : I olfactif (odorat), II optique (vision), III oculomoteur (motricité oculaire), V trijumeau (sensibilité du visage), VII facial (expression faciale), X vague (fonctions viscérales). Ces nerfs peuvent être sensitifs, moteurs ou mixtes.",
+          "fact": "Le nerf vague (X) innerve la majorité des organes thoraciques et abdominaux.",
+          "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Peripheral nervous system"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "cn_vagus_001",
+          "question": "Quel est le numéro du nerf vague ?",
+          "options": ["V (cinq)", "VII (sept)", "IX (neuf)", "X (dix)"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "cn_count_001",
+          "prompt": "Les nerfs crâniens sont au nombre de ___ paires.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Nerfs crâniens terminés",
+          "body": "Tu connais maintenant les principaux nerfs crâniens et leurs fonctions.",
+          "masteredConcepts": ["anatomy.pns.cranial_nerves.count", "anatomy.pns.cranial_nerves.vagus"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_pns1_id;
+
+  IF v_level_pns1_id IS NULL THEN
+    SELECT id INTO v_level_pns1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'pns_cranial_nerves';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_pns1_id,
+    $json${
+      "cn_vagus_001": {
+        "correctIndex": 3,
+        "explanation": "Le nerf vague est le Xe nerf crânien. C'est le plus long nerf crânien, innervant le cœur, les poumons et la majorité des organes abdominaux.",
+        "conceptKey": "anatomy.pns.cranial_nerves.vagus",
+        "sourceRefs": []
+      },
+      "cn_count_001": {
+        "acceptedAnswers": ["12", "douze"],
+        "explanation": "Il existe 12 paires de nerfs crâniens, numérotés de I à XII, émergeant du tronc cérébral et du bulbe rachidien.",
+        "conceptKey": "anatomy.pns.cranial_nerves.count",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Les nerfs spinaux ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'pns_spinal_nerves',
+    'Les nerfs spinaux',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les nerfs spinaux",
+          "subtitle": "31 paires de nerfs",
+          "body": "Il existe 31 paires de nerfs spinaux : 8 cervicaux, 12 thoraciques, 5 lombaires, 5 sacraux et 1 coccygien. Chaque nerf spinal naît de la moelle épinière par deux racines : la racine dorsale (postérieure) sensitive et la racine ventrale (antérieure) motrice. Les dermatomes correspondent aux zones cutanées innervées par chaque nerf spinal.",
+          "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Peripheral nervous system"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "sn_count_001",
+          "question": "Combien y a-t-il de paires de nerfs spinaux ?",
+          "options": ["28 paires", "31 paires", "33 paires", "36 paires"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "sn_ventral_001",
+          "prompt": "La racine ___ du nerf spinal est motrice.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Nerfs spinaux terminés",
+          "body": "Tu connais maintenant l'organisation des 31 paires de nerfs spinaux.",
+          "masteredConcepts": ["anatomy.pns.spinal_nerves.count", "anatomy.pns.spinal_nerves.roots"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_pns2_id;
+
+  IF v_level_pns2_id IS NULL THEN
+    SELECT id INTO v_level_pns2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'pns_spinal_nerves';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_pns2_id,
+    $json${
+      "sn_count_001": {
+        "correctIndex": 1,
+        "explanation": "Il existe 31 paires de nerfs spinaux : 8 cervicales (C1-C8), 12 thoraciques (T1-T12), 5 lombaires (L1-L5), 5 sacrales (S1-S5) et 1 coccygienne.",
+        "conceptKey": "anatomy.pns.spinal_nerves.count",
+        "sourceRefs": []
+      },
+      "sn_ventral_001": {
+        "acceptedAnswers": ["ventrale", "antérieure"],
+        "explanation": "La racine ventrale (antérieure) contient les fibres motrices efférentes. La racine dorsale (postérieure) contient les fibres sensitives afférentes.",
+        "conceptKey": "anatomy.pns.spinal_nerves.roots",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Le système nerveux autonome ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'pns_autonomic',
+    'Le système nerveux autonome',
+    3,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le système nerveux autonome",
+          "subtitle": "Sympathique et parasympathique",
+          "body": "Le système nerveux végétatif (autonome) comprend deux divisions : le sympathique (fight-or-flight) utilise la noradrénaline comme neurotransmetteur principal et prépare l'organisme à l'action ; le parasympathique (rest-and-digest) utilise l'acétylcholine et favorise les fonctions de repos et de digestion.",
+          "sourceRefs": [{"title": "Open educational anatomy references", "type": "open_educational", "chapter": "Autonomic nervous system"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "ans_nt_001",
+          "question": "Quel neurotransmetteur est principalement utilisé par le système nerveux sympathique ?",
+          "options": ["L'acétylcholine", "La dopamine", "La noradrénaline", "La sérotonine"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "ans_para_nt_001",
+          "prompt": "Le système nerveux parasympathique utilise l'___ comme neurotransmetteur.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Système nerveux autonome terminé",
+          "body": "Tu connais maintenant les deux divisions du système nerveux autonome.",
+          "masteredConcepts": ["anatomy.pns.autonomic.sympathetic", "anatomy.pns.autonomic.parasympathetic"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_pns3_id;
+
+  IF v_level_pns3_id IS NULL THEN
+    SELECT id INTO v_level_pns3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'pns_autonomic';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_pns3_id,
+    $json${
+      "ans_nt_001": {
+        "correctIndex": 2,
+        "explanation": "Le système sympathique utilise la noradrénaline (norepinephrine) comme neurotransmetteur au niveau des organes effecteurs, via les récepteurs adrénergiques.",
+        "conceptKey": "anatomy.pns.autonomic.sympathetic_nt",
+        "sourceRefs": []
+      },
+      "ans_para_nt_001": {
+        "acceptedAnswers": ["acétylcholine"],
+        "explanation": "Le système parasympathique utilise l'acétylcholine comme neurotransmetteur, agissant sur les récepteurs muscariniques des organes cibles.",
+        "conceptKey": "anatomy.pns.autonomic.parasympathetic_nt",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
