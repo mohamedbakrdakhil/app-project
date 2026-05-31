@@ -5412,3 +5412,521 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Seed: Médecine d'urgence subject, Urgences vitales chapter, 3 levels
+-- ============================================================
+
+INSERT INTO public.subjects (id, slug, name_fr, icon, color, description_fr, order_index, is_published)
+VALUES ('emergency', 'emergency', 'Médecine d''urgence', '🚨', '#e74c3c', 'Prise en charge des situations aiguës et urgences vitales.', 13, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, icon, order_index, is_published)
+VALUES ('emergency', 'vital_emergencies', 'Urgences vitales', '🚨', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_cardiac_id uuid;
+  v_level_resp_id uuid;
+  v_level_shock_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'emergency' AND slug = 'vital_emergencies';
+
+  -- ---- Niveau 1: Arrêt cardiaque ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'emerg_cardiac_arrest',
+    'Arrêt cardiaque',
+    1,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Arrêt cardiaque",
+          "subtitle": "Chaîne de survie et RCP",
+          "body": "L'arrêt cardiaque se définit par l'absence de pouls et d'activité respiratoire. La chaîne de survie comporte 4 maillons : reconnaître et appeler les secours, débuter la RCP, utiliser un défibrillateur (DEA) dès que possible, puis la réanimation médicalisée. La RCP consiste en 30 compressions thoraciques pour 2 insufflations, à un rythme de 100-120 compressions par minute, avec une profondeur de 5-6 cm. Le DEA doit être utilisé dès qu'il est disponible.",
+          "sourceRefs": [{"title": "Open educational emergency medicine references", "type": "open_educational", "chapter": "Cardiac arrest"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "emerg_cpr_rate_001",
+          "question": "Rythme des compressions thoraciques en RCP ?",
+          "options": ["60-80 compressions par minute", "100-120 compressions par minute", "120-140 compressions par minute", "80-100 compressions par minute"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "emerg_cpr_ratio_001",
+          "prompt": "En RCP, le ratio compressions/insufflations est de ___ / 2.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Arrêt cardiaque terminé",
+          "body": "Tu connais maintenant les étapes de la chaîne de survie et les paramètres de la RCP.",
+          "masteredConcepts": ["emergency.cardiac_arrest.bls_chain", "emergency.cardiac_arrest.cpr_ratio"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_cardiac_id;
+
+  IF v_level_cardiac_id IS NULL THEN
+    SELECT id INTO v_level_cardiac_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'emerg_cardiac_arrest';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_cardiac_id,
+    $json${
+      "emerg_cpr_rate_001": {
+        "correctIndex": 1,
+        "explanation": "Le rythme recommandé pour les compressions thoraciques en RCP est de 100 à 120 compressions par minute, avec une profondeur de 5 à 6 cm.",
+        "conceptKey": "emergency.cardiac_arrest.cpr_rate",
+        "sourceRefs": []
+      },
+      "emerg_cpr_ratio_001": {
+        "acceptedAnswers": ["30"],
+        "explanation": "Le ratio standard en RCP est de 30 compressions pour 2 insufflations (30:2), permettant un débit cardiaque suffisant tout en assurant l'oxygénation.",
+        "conceptKey": "emergency.cardiac_arrest.cpr_ratio",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Détresse respiratoire ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'emerg_respiratory',
+    'Détresse respiratoire aiguë',
+    2,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Détresse respiratoire aiguë",
+          "subtitle": "Hypoxie, causes et prise en charge",
+          "body": "La détresse respiratoire aiguë se manifeste par une hypoxie avec SpO2 < 90% et une cyanose. Les principales causes sont : exacerbation d'asthme ou de BPCO, pneumothorax, embolie pulmonaire. La prise en charge comporte l'oxygénothérapie adaptée, la position semi-assise et l'appel du SAMU.",
+          "sourceRefs": [{"title": "Open educational emergency medicine references", "type": "open_educational", "chapter": "Respiratory distress"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "emerg_spo2_001",
+          "question": "Valeur SpO2 définissant l'hypoxémie sévère ?",
+          "options": ["Inférieure à 95%", "Inférieure à 92%", "Inférieure à 90%", "Inférieure à 85%"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "emerg_pneumo_001",
+          "prompt": "Le pneumothorax compressif entraîne un déplacement de la ___ controlatérale.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Détresse respiratoire terminée",
+          "body": "Tu connais maintenant les signes de détresse respiratoire et les premières mesures à prendre.",
+          "masteredConcepts": ["emergency.respiratory.hypoxia", "emergency.respiratory.pneumothorax"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_resp_id;
+
+  IF v_level_resp_id IS NULL THEN
+    SELECT id INTO v_level_resp_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'emerg_respiratory';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_resp_id,
+    $json${
+      "emerg_spo2_001": {
+        "correctIndex": 2,
+        "explanation": "Une SpO2 inférieure à 90% définit l'hypoxémie sévère nécessitant une prise en charge urgente. Entre 90 et 94% on parle d'hypoxémie modérée.",
+        "conceptKey": "emergency.respiratory.hypoxia.severe",
+        "sourceRefs": []
+      },
+      "emerg_pneumo_001": {
+        "acceptedAnswers": ["trachée"],
+        "explanation": "Le pneumothorax compressif entraîne un déplacement de la trachée du côté controlatéral au pneumothorax, signe clinique de gravité extrême nécessitant une exsufflation en urgence.",
+        "conceptKey": "emergency.respiratory.pneumothorax.tension",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: État de choc ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'emerg_shock',
+    'État de choc',
+    3,
+    'medium',
+    130,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "État de choc",
+          "subtitle": "Types de choc et réanimation",
+          "body": "Le choc est une hypoperfusion tissulaire. On distingue 4 types : hypovolémique (hémorragie, déshydratation), cardiogénique (infarctus, arythmie), distributif (sepsis, anaphylaxie) et obstructif (embolie pulmonaire, tamponnade). Les signes sont : PA basse, FC élevée, pâleur, confusion. La réanimation repose sur : pose d'une voie veineuse, remplissage vasculaire et traitement de la cause.",
+          "sourceRefs": [{"title": "Open educational emergency medicine references", "type": "open_educational", "chapter": "Shock"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "emerg_shock_cc_001",
+          "scenario": "Un homme de 70 ans est hospitalisé pour rectorragies abondantes. PA 80/50 mmHg, FC 130/min, extrémités froides, marbrures. Hémoglobine 6 g/dL.",
+          "question": "Quel type de choc présente ce patient ?",
+          "options": ["Choc cardiogénique", "Choc hypovolémique hémorragique", "Choc septique", "Choc anaphylactique"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "emerg_shock_001",
+          "question": "Premier geste devant un choc hémorragique ?",
+          "options": ["Contrôler le saignement et poser une voie veineuse", "Administrer de l'adrénaline", "Réaliser une intubation", "Transfuser immédiatement"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "État de choc terminé",
+          "body": "Tu connais maintenant les 4 types de choc et les principes de réanimation.",
+          "masteredConcepts": ["emergency.shock.types", "emergency.shock.hypovolemic", "emergency.shock.resuscitation"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_shock_id;
+
+  IF v_level_shock_id IS NULL THEN
+    SELECT id INTO v_level_shock_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'emerg_shock';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_shock_id,
+    $json${
+      "emerg_shock_cc_001": {
+        "correctIndex": 1,
+        "explanation": "Les rectorragies abondantes avec PA effondrée, tachycardie et hémoglobine à 6 g/dL orientent vers un choc hypovolémique hémorragique. L'absence de fièvre, de signes septiques ou d'allergie exclut les autres types.",
+        "conceptKey": "emergency.shock.hypovolemic.hemorrhagic",
+        "sourceRefs": []
+      },
+      "emerg_shock_001": {
+        "correctIndex": 0,
+        "explanation": "Devant un choc hémorragique, le premier geste est de contrôler le saignement (compression, garrot) et de poser une voie veineuse pour le remplissage vasculaire. Sans contrôle de l'hémorragie, tout remplissage est insuffisant.",
+        "conceptKey": "emergency.shock.hypovolemic.management",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Seed: Chirurgie générale subject, Soins péri-opératoires chapter, 3 levels
+-- ============================================================
+
+INSERT INTO public.subjects (id, slug, name_fr, icon, color, description_fr, order_index, is_published)
+VALUES ('surgery', 'surgery', 'Chirurgie générale', '🔪', '#8e44ad', 'Principes chirurgicaux, anesthésie et soins péri-opératoires.', 14, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, icon, order_index, is_published)
+VALUES ('surgery', 'perioperative_care', 'Soins péri-opératoires', '🔪', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_preop_id uuid;
+  v_level_anest_id uuid;
+  v_level_postop_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'surgery' AND slug = 'perioperative_care';
+
+  -- ---- Niveau 1: Évaluation pré-opératoire ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'surg_preop',
+    'Évaluation pré-opératoire',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Évaluation pré-opératoire",
+          "subtitle": "Score ASA, jeûne et bilan",
+          "body": "L'évaluation pré-opératoire comprend : le score ASA (I à VI) évaluant le risque anesthésique, les règles de jeûne (6h pour les solides, 2h pour les liquides clairs), l'arrêt des anticoagulants selon le protocole, le consentement éclairé, le groupe sanguin, la NFS et le bilan de coagulation.",
+          "sourceRefs": [{"title": "Open educational surgery references", "type": "open_educational", "chapter": "Preoperative assessment"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "surg_fasting_001",
+          "question": "Durée de jeûne pour les liquides clairs avant une chirurgie ?",
+          "options": ["6 heures", "2 heures", "4 heures", "8 heures"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "surg_asa_001",
+          "prompt": "Le score ___ évalue le risque anesthésique du patient en 6 classes.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Évaluation pré-opératoire terminée",
+          "body": "Tu connais maintenant les éléments clés de l'évaluation pré-opératoire.",
+          "masteredConcepts": ["surgery.preop.asa_score", "surgery.preop.fasting"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_preop_id;
+
+  IF v_level_preop_id IS NULL THEN
+    SELECT id INTO v_level_preop_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'surg_preop';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_preop_id,
+    $json${
+      "surg_fasting_001": {
+        "correctIndex": 1,
+        "explanation": "Les recommandations actuelles autorisent les liquides clairs (eau, jus sans pulpe) jusqu'à 2 heures avant l'anesthésie. Les solides et le lait nécessitent 6 heures de jeûne.",
+        "conceptKey": "surgery.preop.fasting.clear_liquids",
+        "sourceRefs": []
+      },
+      "surg_asa_001": {
+        "acceptedAnswers": ["ASA"],
+        "explanation": "Le score ASA (American Society of Anesthesiologists) classe les patients de I (patient sain) à VI (patient en état de mort cérébrale), permettant d'évaluer le risque anesthésique périopératoire.",
+        "conceptKey": "surgery.preop.asa_score",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Anesthésie ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'surg_anesthesia',
+    'Types d''anesthésie',
+    2,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Types d'anesthésie",
+          "subtitle": "Générale, locorégionale et locale",
+          "body": "L'anesthésie générale comprend : l'induction (propofol ou thiopental), le maintien (isoflurane ou propofol en TIVA) et le bloc neuromusculaire. L'anesthésie locorégionale inclut la rachianesthésie (injection intrathécale), la péridurale et les blocs nerveux périphériques. L'anesthésie locale utilise la lidocaïne ou la bupivacaïne.",
+          "sourceRefs": [{"title": "Open educational surgery references", "type": "open_educational", "chapter": "Anesthesia types"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "surg_induction_001",
+          "question": "Agent d'induction anesthésique le plus utilisé ?",
+          "options": ["Le propofol", "Le thiopental", "La kétamine", "L'isoflurane"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "surg_spinal_001",
+          "prompt": "L'anesthésie ___ consiste à injecter l'anesthésique dans l'espace sous-arachnoïdien.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Anesthésie terminée",
+          "body": "Tu connais maintenant les différents types d'anesthésie et leurs agents principaux.",
+          "masteredConcepts": ["surgery.anesthesia.general", "surgery.anesthesia.regional.spinal"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_anest_id;
+
+  IF v_level_anest_id IS NULL THEN
+    SELECT id INTO v_level_anest_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'surg_anesthesia';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_anest_id,
+    $json${
+      "surg_induction_001": {
+        "correctIndex": 0,
+        "explanation": "Le propofol est l'agent d'induction le plus utilisé en raison de son délai d'action rapide (30 secondes), de sa durée courte et de son profil de réveil agréable. Le thiopental est moins utilisé aujourd'hui.",
+        "conceptKey": "surgery.anesthesia.general.induction.propofol",
+        "sourceRefs": []
+      },
+      "surg_spinal_001": {
+        "acceptedAnswers": ["rachidienne", "spinale", "rachianesthésie"],
+        "explanation": "La rachianesthésie (ou anesthésie spinale) consiste à injecter l'anesthésique local dans l'espace sous-arachnoïdien (intrathécal), produisant un bloc sensitif et moteur des membres inférieurs.",
+        "conceptKey": "surgery.anesthesia.regional.spinal",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Soins post-opératoires ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'surg_postop',
+    'Soins post-opératoires',
+    3,
+    'medium',
+    130,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Soins post-opératoires",
+          "subtitle": "Surveillance et complications",
+          "body": "La surveillance post-opératoire comprend : les constantes vitales, la douleur (EVA), la diurèse et la plaie. Les complications post-opératoires incluent : le saignement, l'infection du site opératoire (ISO), la thrombose veineuse profonde (TVP) et l'embolie pulmonaire (triade de Virchow : stase, hypercoagulabilité, lésion endothéliale), l'iléus et la rétention urinaire. La prévention thromboembolique repose sur les HBPM et les bas de contention.",
+          "sourceRefs": [{"title": "Open educational surgery references", "type": "open_educational", "chapter": "Postoperative care"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "surg_dvt_cc_001",
+          "scenario": "Une femme de 45 ans, opérée d'une prothèse de hanche il y a 3 jours, présente une douleur et un œdème du mollet droit, rougeur et chaleur locale. La D-dimère est à 2500 ng/mL.",
+          "question": "Quel diagnostic post-opératoire doit être suspecté en priorité ?",
+          "options": ["Infection du site opératoire", "Thrombose veineuse profonde", "Hématome post-opératoire", "Syndrome compartimental"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "surg_virchow_001",
+          "question": "Triade de Virchow pour le risque thromboembolique ?",
+          "options": ["Anémie, thrombopénie, coagulopathie", "Hypoxie, hypercapnie, acidose", "Stase, hypercoagulabilité, lésion endothéliale", "Immobilité, déshydratation, obésité"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Soins post-opératoires terminés",
+          "body": "Tu connais maintenant les principales complications post-opératoires et leur prévention.",
+          "masteredConcepts": ["surgery.postop.dvt", "surgery.postop.virchow_triad", "surgery.postop.prevention"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_postop_id;
+
+  IF v_level_postop_id IS NULL THEN
+    SELECT id INTO v_level_postop_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'surg_postop';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_postop_id,
+    $json${
+      "surg_dvt_cc_001": {
+        "correctIndex": 1,
+        "explanation": "La douleur et l'œdème unilatéral du mollet avec rougeur et chaleur, associés à des D-dimères très élevés, à J3 d'une prothèse de hanche (chirurgie orthopédique majeure à haut risque thromboembolique), évoquent fortement une TVP. L'écho-Doppler veineux confirme le diagnostic.",
+        "conceptKey": "surgery.postop.dvt.diagnosis",
+        "sourceRefs": []
+      },
+      "surg_virchow_001": {
+        "correctIndex": 2,
+        "explanation": "La triade de Virchow décrit les 3 facteurs favorisant la thrombose veineuse : la stase veineuse, l'hypercoagulabilité et la lésion endothéliale. Ces 3 éléments sont réunis en post-opératoire, justifiant la prophylaxie systématique.",
+        "conceptKey": "surgery.postop.virchow_triad",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
