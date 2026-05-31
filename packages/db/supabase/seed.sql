@@ -6462,3 +6462,521 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Seed: Gynécologie-Obstétrique subject, pregnancy_basics chapter, 3 levels
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('gynecology', 'Gynécologie-Obstétrique', 'Gynecology-Obstetrics', '🤰', '#e91e8c', 'Santé de la femme, grossesse et accouchement.', 17, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, published)
+VALUES ('gynecology', 'pregnancy_basics', 'Bases de l''obstétrique', 'Grossesse normale, suivi et accouchement.', '🤰', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_gyn1_id uuid;
+  v_level_gyn2_id uuid;
+  v_level_gyn3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'gynecology' AND slug = 'pregnancy_basics';
+
+  -- ---- Niveau 1: Grossesse normale ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'gyn_pregnancy',
+    'Grossesse normale',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Grossesse normale",
+          "subtitle": "Suivi et physiologie",
+          "body": "La grossesse dure normalement 40 semaines d'aménorrhée (SA) à partir des dernières règles, divisée en 3 trimestres. Diagnostic : beta-hCG positif. Les mouvements fœtaux sont ressentis vers 20 SA. La prise de poids totale recommandée est de 10 à 12 kg. Les consultations prénatales ont lieu aux mois 3, 4, 5, 6, 7, 8 et 9. Les 3 échographies obligatoires en France se font à 12, 22 et 32 SA.",
+          "sourceRefs": [{"title": "Open educational obstetrics references", "type": "open_educational", "chapter": "Normal pregnancy"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "gyn_ultrasound_001",
+          "question": "Nombre d'échographies obligatoires pendant la grossesse en France ?",
+          "options": ["1 échographie (12 SA)", "2 échographies (12, 22 SA)", "3 échographies (12, 22, 32 SA)", "4 échographies (12, 20, 28, 36 SA)"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "gyn_duration_001",
+          "prompt": "La grossesse dure normalement ___ semaines d'aménorrhée.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Grossesse normale terminée",
+          "body": "Tu connais maintenant les bases du suivi de la grossesse normale.",
+          "masteredConcepts": ["gynecology.pregnancy.duration", "gynecology.pregnancy.ultrasounds"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_gyn1_id;
+
+  IF v_level_gyn1_id IS NULL THEN
+    SELECT id INTO v_level_gyn1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'gyn_pregnancy';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_gyn1_id,
+    $json${
+      "gyn_ultrasound_001": {
+        "correctIndex": 2,
+        "explanation": "En France, 3 échographies sont obligatoires pendant la grossesse : à 12 SA (1er trimestre), 22 SA (2e trimestre) et 32 SA (3e trimestre).",
+        "conceptKey": "gynecology.pregnancy.ultrasounds",
+        "sourceRefs": []
+      },
+      "gyn_duration_001": {
+        "acceptedAnswers": ["40", "quarante"],
+        "explanation": "La grossesse dure normalement 40 semaines d'aménorrhée (SA), soit environ 9 mois, à compter du premier jour des dernières règles.",
+        "conceptKey": "gynecology.pregnancy.duration",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Travail obstétrical ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'gyn_labor',
+    'Travail obstétrical',
+    2,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Travail obstétrical",
+          "subtitle": "Phases du travail et accouchement",
+          "body": "Le travail obstétrical débute par l'effacement puis la dilatation cervicale de 0 à 10 cm. On distingue 3 phases : phase latente (0-6 cm), phase active (6-10 cm) et phase d'expulsion. Le partogramme permet la surveillance du travail. La fréquence cardiaque fœtale est monitorée en continu. L'accouchement peut être voie basse ou par césarienne. Le score d'APGAR est coté à 1 et 5 minutes de vie, de 0 à 10.",
+          "sourceRefs": [{"title": "Open educational obstetrics references", "type": "open_educational", "chapter": "Labor and delivery"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "gyn_apgar_001",
+          "question": "Score utilisé pour évaluer l'état du nouveau-né à la naissance ?",
+          "options": ["Score d'APGAR", "Score de Glasgow", "Score de Bishop", "Score de SOFA"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "gyn_dilation_001",
+          "prompt": "Le travail obstétrical est divisé en phases de dilatation cervicale de 0 à ___ cm.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Travail obstétrical terminé",
+          "body": "Tu connais maintenant les phases du travail et la surveillance obstétricale.",
+          "masteredConcepts": ["gynecology.labor.phases", "gynecology.labor.apgar"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_gyn2_id;
+
+  IF v_level_gyn2_id IS NULL THEN
+    SELECT id INTO v_level_gyn2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'gyn_labor';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_gyn2_id,
+    $json${
+      "gyn_apgar_001": {
+        "correctIndex": 0,
+        "explanation": "Le score d'APGAR évalue l'état du nouveau-né à 1 et 5 minutes de vie. Il prend en compte : Apparence (couleur), Pouls, Grimace, Activité, Respiration. Score de 0 à 10.",
+        "conceptKey": "gynecology.labor.apgar",
+        "sourceRefs": []
+      },
+      "gyn_dilation_001": {
+        "acceptedAnswers": ["10", "dix"],
+        "explanation": "La dilatation cervicale progresse de 0 à 10 cm lors du travail. La dilatation complète (10 cm) marque le début de la phase d'expulsion.",
+        "conceptKey": "gynecology.labor.phases",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Complications obstétricales ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'gyn_complications',
+    'Complications obstétricales',
+    3,
+    'hard',
+    130,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Complications obstétricales",
+          "subtitle": "Pré-éclampsie, diabète gestationnel et urgences",
+          "body": "La pré-éclampsie associe une PA ≥ 140/90 mmHg et une protéinurie après 20 SA. L'éclampsie ajoute des convulsions à ce tableau. Le diabète gestationnel est dépisté entre 24 et 28 SA. Le placenta praevia correspond à l'insertion basse du placenta. La grossesse extra-utérine (GEU) se manifeste par douleur + métrorragies + hCG positif.",
+          "sourceRefs": [{"title": "Open educational obstetrics references", "type": "open_educational", "chapter": "Obstetric complications"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "gyn_preeclampsia_cc_001",
+          "scenario": "Une primigeste de 32 ans à 34 SA présente à la consultation: PA 155/100 mmHg, œdèmes des membres inférieurs importants, bandelette urinaire: protéinurie 3+. Elle se plaint de céphalées et de phosphènes.",
+          "question": "Quel diagnostic devez-vous évoquer en urgence ?",
+          "options": ["Hypertension gestationnelle simple", "Pré-éclampsie sévère", "Éclampsie", "Cholestase gravidique"],
+          "difficulty": "hard",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "gyn_preeclampsia_def_001",
+          "question": "Association définissant la pré-éclampsie ?",
+          "options": ["Fièvre + protéinurie après 20 SA", "HTA seule après 20 SA", "HTA + protéinurie après 20 SA", "Convulsions + HTA après 20 SA"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Complications obstétricales terminées",
+          "body": "Tu connais maintenant les principales complications de la grossesse.",
+          "masteredConcepts": ["gynecology.complications.preeclampsia", "gynecology.complications.gestational_diabetes"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_gyn3_id;
+
+  IF v_level_gyn3_id IS NULL THEN
+    SELECT id INTO v_level_gyn3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'gyn_complications';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_gyn3_id,
+    $json${
+      "gyn_preeclampsia_cc_001": {
+        "correctIndex": 1,
+        "explanation": "La pré-éclampsie sévère est définie par une PA ≥ 160/110 mmHg et/ou des signes fonctionnels (céphalées, phosphènes, acouphènes). Ici : PA 155/100 + protéinurie 3+ + signes fonctionnels = pré-éclampsie sévère. L'éclampsie nécessiterait des convulsions.",
+        "conceptKey": "gynecology.complications.preeclampsia.severe",
+        "sourceRefs": []
+      },
+      "gyn_preeclampsia_def_001": {
+        "correctIndex": 2,
+        "explanation": "La pré-éclampsie est définie par l'association d'une HTA (PA ≥ 140/90 mmHg) et d'une protéinurie (≥ 0,3 g/24h) apparaissant après 20 SA. L'éclampsie y ajoute des convulsions.",
+        "conceptKey": "gynecology.complications.preeclampsia",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Seed: Psychiatrie subject, mood_disorders chapter, 3 levels
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('psychiatry', 'Psychiatrie', 'Psychiatry', '🧘', '#9c27b0', 'Santé mentale, troubles psychiatriques et thérapeutiques.', 18, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, published)
+VALUES ('psychiatry', 'mood_disorders', 'Troubles de l''humeur', 'Dépression, trouble bipolaire et leurs traitements.', '🧘', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_psych1_id uuid;
+  v_level_psych2_id uuid;
+  v_level_psych3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'psychiatry' AND slug = 'mood_disorders';
+
+  -- ---- Niveau 1: Dépression ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'psych_depression',
+    'Épisode dépressif caractérisé',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Épisode dépressif caractérisé",
+          "subtitle": "Critères DSM-5",
+          "body": "L'épisode dépressif caractérisé (EDC) nécessite ≥ 5 critères pendant ≥ 2 semaines, incluant obligatoirement l'humeur dépressive et/ou l'anhédonie. Symptômes clés : troubles du sommeil, modifications de l'appétit, fatigue, difficultés de concentration, sentiment de dévalorisation, ralentissement ou agitation psychomotrice, idées suicidaires. Les critères DSM-5 permettent le diagnostic.",
+          "sourceRefs": [{"title": "Open educational psychiatry references", "type": "open_educational", "chapter": "Depressive disorders"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "psych_dep_duration_001",
+          "question": "Durée minimale pour poser le diagnostic d'épisode dépressif caractérisé ?",
+          "options": ["1 semaine", "2 semaines", "1 mois", "3 mois"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "psych_anhedonia_001",
+          "prompt": "L'___ est l'incapacité à ressentir du plaisir, symptôme cardinal de la dépression.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Dépression terminée",
+          "body": "Tu connais maintenant les critères diagnostiques de l'épisode dépressif caractérisé.",
+          "masteredConcepts": ["psychiatry.depression.dsm5_criteria", "psychiatry.depression.anhedonia"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_psych1_id;
+
+  IF v_level_psych1_id IS NULL THEN
+    SELECT id INTO v_level_psych1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'psych_depression';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_psych1_id,
+    $json${
+      "psych_dep_duration_001": {
+        "correctIndex": 1,
+        "explanation": "Selon le DSM-5, le diagnostic d'épisode dépressif caractérisé requiert la présence d'au moins 5 symptômes pendant une durée minimale de 2 semaines, avec présence obligatoire de l'humeur dépressive et/ou de l'anhédonie.",
+        "conceptKey": "psychiatry.depression.dsm5_criteria",
+        "sourceRefs": []
+      },
+      "psych_anhedonia_001": {
+        "acceptedAnswers": ["anhédonie"],
+        "explanation": "L'anhédonie est l'incapacité à ressentir du plaisir dans les activités habituellement plaisantes. C'est un symptôme cardinal de la dépression, l'un des deux critères obligatoires du DSM-5.",
+        "conceptKey": "psychiatry.depression.anhedonia",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Trouble bipolaire ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'psych_bipolar',
+    'Trouble bipolaire',
+    2,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Trouble bipolaire",
+          "subtitle": "Épisodes maniaques et dépressifs",
+          "body": "Le trouble bipolaire alterne des épisodes dépressifs et des épisodes maniaques ou hypomaniaques. La manie se caractérise par : humeur élevée ou irritable, diminution du besoin de sommeil, idées de grandeur, logorrhée, augmentation de l'activité orientée vers un but, comportements à risque, durée ≥ 7 jours. Type I = manie franche ; type II = hypomanie. Le lithium est le thymorégulateur de référence de première intention.",
+          "sourceRefs": [{"title": "Open educational psychiatry references", "type": "open_educational", "chapter": "Bipolar disorders"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "psych_mania_duration_001",
+          "question": "Durée minimale d'un épisode maniaque pour le diagnostic de trouble bipolaire I ?",
+          "options": ["7 jours (1 semaine)", "3 jours", "2 semaines", "1 mois"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "psych_lithium_001",
+          "prompt": "Le ___ est le traitement thymorégulateur de référence du trouble bipolaire.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Trouble bipolaire terminé",
+          "body": "Tu connais maintenant les caractéristiques du trouble bipolaire et son traitement de fond.",
+          "masteredConcepts": ["psychiatry.bipolar.mania_criteria", "psychiatry.bipolar.lithium"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_psych2_id;
+
+  IF v_level_psych2_id IS NULL THEN
+    SELECT id INTO v_level_psych2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'psych_bipolar';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_psych2_id,
+    $json${
+      "psych_mania_duration_001": {
+        "correctIndex": 0,
+        "explanation": "Selon le DSM-5, un épisode maniaque doit durer au minimum 7 jours (ou moins si hospitalisation nécessaire). L'hypomanie (type II) dure au minimum 4 jours.",
+        "conceptKey": "psychiatry.bipolar.mania_criteria",
+        "sourceRefs": []
+      },
+      "psych_lithium_001": {
+        "acceptedAnswers": ["lithium"],
+        "explanation": "Le lithium est le thymorégulateur de référence du trouble bipolaire, efficace dans la prévention des rechutes maniaques et dépressives. Sa surveillance nécessite un suivi régulier de la lithiémie (fenêtre thérapeutique étroite).",
+        "conceptKey": "psychiatry.bipolar.lithium",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Troubles anxieux ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'psych_anxiety',
+    'Troubles anxieux',
+    3,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Troubles anxieux",
+          "subtitle": "TAG, trouble panique, phobies et PTSD",
+          "body": "Les troubles anxieux incluent : le trouble anxieux généralisé (TAG) avec inquiétudes excessives ≥ 6 mois ; le trouble panique avec des attaques imprévisibles (palpitations, dyspnée, douleur thoracique, déréalisation, peur de mourir) ; les phobies spécifiques et sociales ; le trouble stress post-traumatique (PTSD). Le traitement de première intention associe les ISRS (inhibiteurs sélectifs de la recapture de la sérotonine) et la thérapie cognitivo-comportementale (TCC).",
+          "sourceRefs": [{"title": "Open educational psychiatry references", "type": "open_educational", "chapter": "Anxiety disorders"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "psych_panic_cc_001",
+          "scenario": "Une femme de 28 ans décrit des épisodes récurrents de palpitations, dyspnée, douleur thoracique et sensation de mort imminente survenant sans déclencheur apparent, durant 10-15 minutes. Elle a peur d'avoir une pathologie cardiaque mais le bilan est normal.",
+          "question": "Quel trouble psychiatrique correspond à ce tableau ?",
+          "options": ["Trouble anxieux généralisé", "Phobie sociale", "Trouble panique", "Stress post-traumatique"],
+          "difficulty": "easy",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "psych_ssri_001",
+          "question": "Traitement médicamenteux de première intention des troubles anxieux ?",
+          "options": ["Les benzodiazépines", "Les inhibiteurs sélectifs de la recapture de la sérotonine (ISRS)", "Les antipsychotiques", "Les stabilisateurs de l'humeur"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Troubles anxieux terminés",
+          "body": "Tu connais maintenant les principaux troubles anxieux et leurs traitements.",
+          "masteredConcepts": ["psychiatry.anxiety.panic_disorder", "psychiatry.anxiety.treatment_ssri"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_psych3_id;
+
+  IF v_level_psych3_id IS NULL THEN
+    SELECT id INTO v_level_psych3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'psych_anxiety';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_psych3_id,
+    $json${
+      "psych_panic_cc_001": {
+        "correctIndex": 2,
+        "explanation": "Le trouble panique est caractérisé par des attaques de panique récurrentes et inattendues avec symptômes somatiques intenses (palpitations, dyspnée, douleur thoracique, sensation de mort imminente). Le bilan somatique négatif élimine une cause organique.",
+        "conceptKey": "psychiatry.anxiety.panic_disorder",
+        "sourceRefs": []
+      },
+      "psych_ssri_001": {
+        "correctIndex": 1,
+        "explanation": "Les ISRS (inhibiteurs sélectifs de la recapture de la sérotonine) sont le traitement médicamenteux de première intention des troubles anxieux. Ils sont associés à la thérapie cognitivo-comportementale (TCC). Les benzodiazépines sont réservées au court terme.",
+        "conceptKey": "psychiatry.anxiety.treatment_ssri",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
