@@ -5930,3 +5930,535 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Ticket 19: Dermatologie subject + skin_lesions chapter
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, is_published)
+VALUES ('dermatology', 'Dermatologie', 'Dermatology', '🩹', '#f39c12', 'Maladies de la peau, des phanères et des muqueuses.', 15, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('dermatology', 'skin_lesions', 'Lésions élémentaires cutanées', 'Identifier et décrire les lésions de base en dermatologie.', '🩹', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+-- ============================================================
+-- Dermatologie — skin_lesions — 3 niveaux
+-- ============================================================
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_derm1_id uuid;
+  v_level_derm2_id uuid;
+  v_level_derm3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'dermatology' AND slug = 'skin_lesions';
+
+  IF v_chapter_id IS NULL THEN
+    RAISE EXCEPTION 'Chapter dermatology/skin_lesions not found';
+  END IF;
+
+  -- ---- Niveau 1: Lésions primitives ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'derm_primary_lesions',
+    'Lésions primitives',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Lésions primitives",
+          "subtitle": "Les lésions de base en dermatologie",
+          "body": "Les lésions primitives apparaissent sur peau saine. La macule est une lésion plane avec changement de couleur, sans relief. La papule est une lésion surélevée de moins d'1 cm. La plaque est une lésion surélevée de plus d'1 cm. La vésicule est une lésion contenant du liquide clair de moins de 0,5 cm. La bulle est une vésicule de plus de 0,5 cm. La pustule contient du pus. Le nodule est une lésion profonde. Le wheal (papule urticarienne) est une lésion fugace liée à l'urticaire.",
+          "sourceRefs": [{"title": "Open educational dermatology references", "type": "open_educational", "chapter": "Primary skin lesions"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "derm_macule_001",
+          "question": "Lésion plane avec changement de couleur ?",
+          "options": ["La papule", "La macule", "La plaque", "La vésicule"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "derm_pustule_001",
+          "prompt": "Une vésicule contenant du ___ est appelée pustule.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Lésions primitives terminées",
+          "body": "Tu connais maintenant les lésions primitives cutanées.",
+          "masteredConcepts": ["dermatology.primary_lesions.macule", "dermatology.primary_lesions.papule", "dermatology.primary_lesions.pustule"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_derm1_id;
+
+  IF v_level_derm1_id IS NULL THEN
+    SELECT id INTO v_level_derm1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'derm_primary_lesions';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_derm1_id,
+    $json${
+      "derm_macule_001": {
+        "correctIndex": 1,
+        "explanation": "La macule est une lésion plane (sans relief) caractérisée uniquement par un changement de couleur de la peau. Elle peut être érythémateuse, pigmentée ou dépigmentée.",
+        "conceptKey": "dermatology.primary_lesions.macule",
+        "sourceRefs": []
+      },
+      "derm_pustule_001": {
+        "acceptedAnswers": ["pus"],
+        "explanation": "La pustule est une vésicule ou bulle dont le contenu est du pus (liquide trouble riche en polynucléaires neutrophiles). Elle peut être d'origine infectieuse ou non infectieuse.",
+        "conceptKey": "dermatology.primary_lesions.pustule",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Lésions secondaires ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'derm_secondary_lesions',
+    'Lésions secondaires',
+    2,
+    'easy',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Lésions secondaires",
+          "subtitle": "Lésions issues de l'évolution",
+          "body": "Les lésions secondaires résultent de l'évolution de lésions primitives. La squame est une accumulation de cornéocytes (hyperkératose). La croûte résulte du dessèchement des exsudats (sérum, pus ou sang) à la surface cutanée. L'érosion est une perte de substance superficielle limitée à l'épiderme, cicatrisant sans séquelle. L'ulcère est une perte de substance profonde atteignant le derme ou plus, ne cicatrisant pas spontanément. La lichénification est un épaississement cutané avec accentuation des plis par grattage chronique. La cicatrice remplace le tissu cutané après guérison. L'atrophie est un amincissement cutané.",
+          "sourceRefs": [{"title": "Open educational dermatology references", "type": "open_educational", "chapter": "Secondary skin lesions"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "derm_ulcer_001",
+          "question": "Perte de substance atteignant le derme ?",
+          "options": ["La squame", "L'érosion", "L'ulcère", "La lichénification"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "derm_croute_001",
+          "prompt": "La ___ résulte du dessèchement des exsudats (sérum, pus ou sang) à la surface cutanée.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Lésions secondaires terminées",
+          "body": "Tu connais maintenant les lésions secondaires cutanées.",
+          "masteredConcepts": ["dermatology.secondary_lesions.ulcer", "dermatology.secondary_lesions.crust", "dermatology.secondary_lesions.erosion"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_derm2_id;
+
+  IF v_level_derm2_id IS NULL THEN
+    SELECT id INTO v_level_derm2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'derm_secondary_lesions';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_derm2_id,
+    $json${
+      "derm_ulcer_001": {
+        "correctIndex": 2,
+        "explanation": "L'ulcère est une perte de substance profonde atteignant le derme (voire l'hypoderme), sans tendance à la cicatrisation spontanée, contrairement à l'érosion qui est superficielle et cicatrise sans séquelle.",
+        "conceptKey": "dermatology.secondary_lesions.ulcer",
+        "sourceRefs": []
+      },
+      "derm_croute_001": {
+        "acceptedAnswers": ["croûte"],
+        "explanation": "La croûte est formée par le dessèchement d'exsudats (sérum = croûte mélicérique, pus = croûte purulente, sang = croûte hémorragique) à la surface cutanée.",
+        "conceptKey": "dermatology.secondary_lesions.crust",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Maladies courantes ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'derm_common_diseases',
+    'Maladies dermatologiques courantes',
+    3,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Maladies dermatologiques courantes",
+          "subtitle": "Psoriasis, eczéma, acné et mélanome",
+          "body": "Le psoriasis se présente par des plaques érythémateuses bien délimitées recouvertes de squames argentées, avec phénomène de Köbner (lésions sur zones de traumatisme) et atteinte unguéale. L'eczéma (dermatite atopique) est une dermatose prurigineuse chronique à médiation IgE, souvent associée à un terrain atopique. L'acné est liée à une hypersécrétion des glandes sébacées. Le mélanome se dépiste par la règle ABCDE : Asymétrie, Bords irréguliers, Couleur hétérogène, Diamètre > 6 mm, Évolution.",
+          "sourceRefs": [{"title": "Open educational dermatology references", "type": "open_educational", "chapter": "Common dermatological diseases"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "derm_kobner_cc_001",
+          "scenario": "Un homme de 35 ans présente des plaques érythémateuses bien délimitées recouvertes de squames argentées sur les coudes et les genoux. Il note l'apparition de nouvelles lésions sur les zones de traumatisme (gratouillage).",
+          "question": "Quel signe clinique décrit l'apparition de lésions sur les zones de traumatisme ?",
+          "options": ["Signe de Nikolsky", "Phénomène de Köbner", "Signe de Darier", "Dermographisme"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "derm_abcde_001",
+          "question": "Règle ABCDE du mélanome — que signifie le B ?",
+          "options": ["Biopsie recommandée", "Bords irréguliers", "Base large", "Bénin si B absent"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Maladies dermatologiques terminées",
+          "body": "Tu connais maintenant les principales maladies dermatologiques.",
+          "masteredConcepts": ["dermatology.psoriasis.kobner", "dermatology.melanoma.abcde", "dermatology.eczema.atopic"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_derm3_id;
+
+  IF v_level_derm3_id IS NULL THEN
+    SELECT id INTO v_level_derm3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'derm_common_diseases';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_derm3_id,
+    $json${
+      "derm_kobner_cc_001": {
+        "correctIndex": 1,
+        "explanation": "Le phénomène de Köbner (ou isomorphisme réactionnel) est l'apparition de lésions psoriasiques sur les zones de traumatisme cutané (grattage, cicatrice, tatouage). Il est caractéristique du psoriasis.",
+        "conceptKey": "dermatology.psoriasis.kobner",
+        "sourceRefs": []
+      },
+      "derm_abcde_001": {
+        "correctIndex": 1,
+        "explanation": "Dans la règle ABCDE du mélanome : A = Asymétrie, B = Bords irréguliers (mal définis, encochés), C = Couleur hétérogène (multiple teintes), D = Diamètre > 6 mm, E = Évolution (changement récent).",
+        "conceptKey": "dermatology.melanoma.abcde.borders",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Ticket 19: Pédiatrie subject + child_development chapter
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, is_published)
+VALUES ('pediatrics', 'Pédiatrie', 'Pediatrics', '👶', '#3498db', 'Médecine de l''enfant : développement, maladies et vaccinations.', 16, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('pediatrics', 'child_development', 'Développement de l''enfant', 'Croissance, développement psychomoteur et vaccinations.', '👶', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+-- ============================================================
+-- Pédiatrie — child_development — 3 niveaux
+-- ============================================================
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_peds1_id uuid;
+  v_level_peds2_id uuid;
+  v_level_peds3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'pediatrics' AND slug = 'child_development';
+
+  IF v_chapter_id IS NULL THEN
+    RAISE EXCEPTION 'Chapter pediatrics/child_development not found';
+  END IF;
+
+  -- ---- Niveau 1: Croissance ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'peds_growth',
+    'Croissance de l''enfant',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Croissance de l'enfant",
+          "subtitle": "Poids, taille et périmètre crânien",
+          "body": "Poids de naissance : 3,3 kg en moyenne. Il double à 5 mois, triple à 1 an. Taille de naissance : 50 cm, +25 cm la 1ère année, +12 cm la 2e année. Périmètre crânien : 35 cm à la naissance, 47 cm à 1 an. Puberté : filles 10-14 ans, garçons 11-15 ans.",
+          "sourceRefs": [{"title": "Open educational pediatrics references", "type": "open_educational", "chapter": "Child growth"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "peds_birthweight_001",
+          "question": "Poids moyen d'un nourrisson à la naissance ?",
+          "options": ["2.5 kg", "3.3 kg", "4.0 kg", "2.8 kg"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "peds_weighttriple_001",
+          "prompt": "Le poids de naissance est triplé à l'âge d'___ an.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Croissance terminée",
+          "body": "Tu connais maintenant les paramètres de croissance de l'enfant.",
+          "masteredConcepts": ["pediatrics.growth.weight", "pediatrics.growth.height", "pediatrics.growth.head_circumference"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_peds1_id;
+
+  IF v_level_peds1_id IS NULL THEN
+    SELECT id INTO v_level_peds1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'peds_growth';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_peds1_id,
+    $json${
+      "peds_birthweight_001": {
+        "correctIndex": 1,
+        "explanation": "Le poids moyen de naissance est de 3,3 kg (entre 2,5 et 4 kg pour un nouveau-né à terme). Il double vers 5 mois et triple à 1 an (environ 10 kg).",
+        "conceptKey": "pediatrics.growth.weight.birth",
+        "sourceRefs": []
+      },
+      "peds_weighttriple_001": {
+        "acceptedAnswers": ["1", "un"],
+        "explanation": "Le poids de naissance triple à l'âge d'1 an. Un nouveau-né pesant 3,3 kg pèsera environ 10 kg à 1 an. Le doublement se produit plus tôt, vers 5 mois.",
+        "conceptKey": "pediatrics.growth.weight.triple",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Développement psychomoteur ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'peds_milestones',
+    'Développement psychomoteur',
+    2,
+    'easy',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Développement psychomoteur",
+          "subtitle": "Acquisitions motrices et langagières",
+          "body": "Les acquisitions psychomotrices clés : sourire à 2 mois, tenue de tête à 4 mois, position assise avec appui à 6 mois, quatre pattes à 9 mois, marche avec appui à 12 mois, marche seul à 18 mois, phrases de 2 mots à 2 ans, phrases complètes à 3 ans. Le langage : babillage à 6 mois, premiers mots à 12 mois.",
+          "sourceRefs": [{"title": "Open educational pediatrics references", "type": "open_educational", "chapter": "Psychomotor development"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "peds_walk_001",
+          "question": "À quel âge un enfant marche-t-il seul en moyenne ?",
+          "options": ["12 mois", "15 mois", "18 mois", "24 mois"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "peds_firstwords_001",
+          "prompt": "Les premiers mots apparaissent en moyenne vers ___ mois.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Développement psychomoteur terminé",
+          "body": "Tu connais maintenant les étapes clés du développement psychomoteur.",
+          "masteredConcepts": ["pediatrics.milestones.motor", "pediatrics.milestones.language"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_peds2_id;
+
+  IF v_level_peds2_id IS NULL THEN
+    SELECT id INTO v_level_peds2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'peds_milestones';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_peds2_id,
+    $json${
+      "peds_walk_001": {
+        "correctIndex": 2,
+        "explanation": "La marche autonome s'acquiert en moyenne à 18 mois (entre 12 et 18 mois). À 12 mois, l'enfant marche en général avec appui. Un retard de marche au-delà de 18 mois doit être évalué.",
+        "conceptKey": "pediatrics.milestones.motor.walking",
+        "sourceRefs": []
+      },
+      "peds_firstwords_001": {
+        "acceptedAnswers": ["12"],
+        "explanation": "Les premiers mots (avec sens) apparaissent en moyenne vers 12 mois. Le babillage commence à 6 mois. À 2 ans, l'enfant associe 2 mots.",
+        "conceptKey": "pediatrics.milestones.language.first_words",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Vaccinations ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'peds_vaccines',
+    'Vaccinations de l''enfant',
+    3,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Vaccinations de l'enfant",
+          "subtitle": "Calendrier vaccinal français",
+          "body": "Calendrier vaccinal français : BCG (nouveau-nés à risque), DTPCoq (2, 4, 11 mois), Hib (2, 4, 11 mois), PCV13 antipneumococcique (2, 4, 11 mois), MenC méningococcique C (5 mois), ROR rougeole-oreillons-rubéole (12, 16-18 mois), Varicelle (12 mois pour enfants à risque), HPV (11-14 ans), Grippe (annuelle à partir de 6 mois pour populations à risque). L'immunité de groupe (herd immunity) protège les non-vaccinés quand un seuil de couverture est atteint (variable selon la maladie).",
+          "sourceRefs": [{"title": "Open educational pediatrics references", "type": "open_educational", "chapter": "Vaccination schedule"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "peds_pertussis_cc_001",
+          "scenario": "Un nourrisson de 3 mois est amené aux urgences avec une fièvre à 39°C, une toux quinteuse suivie de reprise inspiratoire (chant du coq) et des vomissements post-tussifs. Il n'est pas encore vacciné.",
+          "question": "Quel agent pathogène est le plus probable ?",
+          "options": ["Virus de la rougeole", "Bordetella pertussis (coqueluche)", "Haemophilus influenzae", "Streptococcus pneumoniae"],
+          "difficulty": "easy",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "peds_dtpcoq_001",
+          "question": "Vaccin protégeant contre la coqueluche ?",
+          "options": ["DTPCoq (Diphtérie-Tétanos-Polio-Coqueluche)", "ROR (Rougeole-Oreillons-Rubéole)", "BCG (Bacille de Calmette-Guérin)", "PCV13 (Pneumococcique)"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Vaccinations terminées",
+          "body": "Tu connais maintenant le calendrier vaccinal de l'enfant et les principaux agents pathogènes.",
+          "masteredConcepts": ["pediatrics.vaccines.dtpcoq", "pediatrics.vaccines.ror", "pediatrics.vaccines.pertussis"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_peds3_id;
+
+  IF v_level_peds3_id IS NULL THEN
+    SELECT id INTO v_level_peds3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'peds_vaccines';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_peds3_id,
+    $json${
+      "peds_pertussis_cc_001": {
+        "correctIndex": 1,
+        "explanation": "La coqueluche (Bordetella pertussis) est caractérisée par la triade : toux quinteuse, chant du coq (reprise inspiratoire), vomissements post-tussifs. Elle est particulièrement grave chez le nourrisson non vacciné. Le DTPCoq est administré à 2, 4 et 11 mois.",
+        "conceptKey": "pediatrics.vaccines.pertussis.diagnosis",
+        "sourceRefs": []
+      },
+      "peds_dtpcoq_001": {
+        "correctIndex": 0,
+        "explanation": "Le vaccin DTPCoq protège contre la diphtérie (D), le tétanos (T), la poliomyélite (P) et la coqueluche (Coq). Il est administré à 2, 4 et 11 mois en France, avec des rappels ultérieurs.",
+        "conceptKey": "pediatrics.vaccines.dtpcoq",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
