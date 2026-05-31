@@ -4358,3 +4358,531 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Ticket 16: Microbiologie subject + bacteria_viruses chapter
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('microbiology', 'Microbiologie', 'Microbiology', '🦠', '#c0392b', 'Bactéries, virus et parasites : agents infectieux et mécanismes.', 10, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('microbiology', 'bacteria_viruses', 'Bactéries et virus', 'Classification des agents infectieux et leurs mécanismes.', '🦠', 1, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET
+  title_fr = EXCLUDED.title_fr, description_fr = EXCLUDED.description_fr,
+  icon = EXCLUDED.icon, order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+-- ============================================================
+-- Microbiologie — bacteria_viruses — 3 niveaux
+-- ============================================================
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_micro1_id uuid;
+  v_level_micro2_id uuid;
+  v_level_micro3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'microbiology' AND slug = 'bacteria_viruses';
+
+  -- ---- Niveau 1: Les bactéries — Gram+ / Gram- ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'micro_bacteria',
+    'Les bactéries — Gram+/Gram-',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les bactéries — Gram+/Gram-",
+          "subtitle": "Classification par la coloration de Gram",
+          "body": "La coloration de Gram permet de classer les bactéries en deux grands groupes. Les bactéries Gram+ possèdent une épaisse paroi de peptidoglycane qui retient le colorant violet cristal, apparaissant en violet. Les bactéries Gram- ont une paroi de peptidoglycane fine et une membrane externe lipopolysaccharidique ; elles se décolorent et prennent la safranine rose. Cette distinction est fondamentale pour orienter l'antibiothérapie empirique.",
+          "sourceRefs": [{"title": "Open educational microbiology references", "type": "open_educational", "chapter": "Gram staining"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "micro_gram_pos_001",
+          "question": "Gram+ bacteria cell wall ?",
+          "options": ["Épaisse paroi de peptidoglycane", "Fine paroi avec membrane externe", "Absence de paroi", "Paroi de chitine"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "micro_gram_stain_001",
+          "prompt": "La coloration de ___ différencie les bactéries en deux grands groupes.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Bactéries terminées",
+          "body": "Tu connais maintenant la classification de Gram et ses implications thérapeutiques.",
+          "masteredConcepts": ["microbiology.bacteria.gram_positive", "microbiology.bacteria.gram_negative"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_micro1_id;
+
+  IF v_level_micro1_id IS NULL THEN
+    SELECT id INTO v_level_micro1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'micro_bacteria';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_micro1_id,
+    $json${
+      "micro_gram_pos_001": {
+        "correctIndex": 0,
+        "explanation": "Les bactéries Gram+ possèdent une épaisse couche de peptidoglycane qui retient le complexe iodo-cristal violet lors de la décoloration à l'alcool, leur conférant la couleur violette caractéristique.",
+        "conceptKey": "microbiology.bacteria.gram_positive.cell_wall",
+        "sourceRefs": []
+      },
+      "micro_gram_stain_001": {
+        "acceptedAnswers": ["Gram"],
+        "explanation": "La coloration de Gram, mise au point par Hans Christian Gram en 1884, différencie les bactéries en deux grands groupes selon la composition de leur paroi cellulaire.",
+        "conceptKey": "microbiology.bacteria.gram_staining",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Les virus ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'micro_viruses',
+    'Les virus',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les virus",
+          "subtitle": "Structure : capside ± enveloppe, ADN/ARN, cycles lytique/lysogénique",
+          "body": "Un virus est constitué d'un génome (ADN ou ARN) entouré d'une capside protéique. Certains virus possèdent en plus une enveloppe lipidique dérivée de la membrane de la cellule hôte. Le cycle lytique conduit à la destruction de la cellule hôte et à la libération de nouveaux virions. Le cycle lysogénique permet l'intégration du génome viral dans le chromosome de l'hôte, avec réplication silencieuse. Les virus sont des parasites intracellulaires obligatoires car ils nécessitent la machinerie cellulaire pour se répliquer.",
+          "sourceRefs": [{"title": "Open educational microbiology references", "type": "open_educational", "chapter": "Virus structure"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "micro_capsid_001",
+          "question": "Composant protégeant le matériel génétique viral ?",
+          "options": ["L'enveloppe lipidique", "La capside", "Le nucléoïde", "La membrane externe"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "micro_virus_parasite_001",
+          "prompt": "Les virus sont des parasites ___ obligatoires car ils nécessitent une cellule hôte.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Virus terminés",
+          "body": "Tu connais maintenant la structure virale et les cycles de réplication.",
+          "masteredConcepts": ["microbiology.viruses.capsid", "microbiology.viruses.lytic_cycle", "microbiology.viruses.lysogenic_cycle"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_micro2_id;
+
+  IF v_level_micro2_id IS NULL THEN
+    SELECT id INTO v_level_micro2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'micro_viruses';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_micro2_id,
+    $json${
+      "micro_capsid_001": {
+        "correctIndex": 1,
+        "explanation": "La capside est une coque protéique qui entoure et protège le matériel génétique (ADN ou ARN) du virus. Elle est composée de sous-unités protéiques appelées capsomères.",
+        "conceptKey": "microbiology.viruses.capsid.function",
+        "sourceRefs": []
+      },
+      "micro_virus_parasite_001": {
+        "acceptedAnswers": ["intracellulaires"],
+        "explanation": "Les virus sont des parasites intracellulaires obligatoires : ils ne peuvent se reproduire qu'à l'intérieur d'une cellule hôte vivante en utilisant sa machinerie ribosomale et métabolique.",
+        "conceptKey": "microbiology.viruses.intracellular_parasite",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Les antibiotiques ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'micro_antibiotics',
+    'Les antibiotiques',
+    3,
+    'medium',
+    150,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les antibiotiques",
+          "subtitle": "Bêta-lactamines, macrolides, quinolones et résistances",
+          "body": "Les bêta-lactamines (pénicillines, céphalosporines, carbapénèmes) inhibent la synthèse de la paroi bactérienne en bloquant les protéines de liaison à la pénicilline (PBP). Les macrolides (érythromycine, azithromycine) inhibent la synthèse protéique en se liant à la sous-unité 50S du ribosome. Les quinolones (ciprofloxacine, lévofloxacine) inhibent l'ADN gyrase et la topo-isomérase IV, bloquant la réplication de l'ADN bactérien. Les principaux mécanismes de résistance sont : la production de bêta-lactamases (hydrolyse des bêta-lactamines), la modification des cibles, la diminution de la perméabilité membranaire et les pompes à efflux.",
+          "sourceRefs": [{"title": "Open educational microbiology references", "type": "open_educational", "chapter": "Antibiotics"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "micro_amox_cc_001",
+          "scenario": "Une femme de 28 ans a une infection urinaire à E. coli résistante à l'amoxicilline par bêta-lactamase, mais sensible à amoxicilline-acide clavulanique.",
+          "question": "Pourquoi l'amoxicilline + acide clavulanique est-elle efficace ?",
+          "options": ["L'acide clavulanique augmente l'absorption", "L'acide clavulanique inhibe la bêta-lactamase", "L'association double la dose", "L'acide clavulanique perméabilise la membrane"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "micro_quinolone_001",
+          "question": "Mécanisme des quinolones ?",
+          "options": ["Inhibition de la synthèse de la paroi", "Inhibition de la synthèse protéique ribosomale", "Inhibition de l'ADN gyrase", "Inhibition de la synthèse des folates"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Antibiotiques terminés",
+          "body": "Tu connais maintenant les grandes classes d'antibiotiques et les mécanismes de résistance.",
+          "masteredConcepts": ["microbiology.antibiotics.beta_lactams", "microbiology.antibiotics.macrolides", "microbiology.antibiotics.quinolones", "microbiology.antibiotics.resistance"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_micro3_id;
+
+  IF v_level_micro3_id IS NULL THEN
+    SELECT id INTO v_level_micro3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'micro_antibiotics';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_micro3_id,
+    $json${
+      "micro_amox_cc_001": {
+        "correctIndex": 1,
+        "explanation": "L'acide clavulanique est un inhibiteur irréversible des bêta-lactamases. Il protège l'amoxicilline de l'hydrolyse enzymatique, restaurant ainsi son activité antibactérienne contre les souches productrices de bêta-lactamases.",
+        "conceptKey": "microbiology.antibiotics.beta_lactamase_inhibitor",
+        "sourceRefs": []
+      },
+      "micro_quinolone_001": {
+        "correctIndex": 2,
+        "explanation": "Les quinolones inhibent l'ADN gyrase (topo-isomérase II) et la topo-isomérase IV bactériennes, enzymes indispensables à la réplication, à la transcription et à la réparation de l'ADN bactérien.",
+        "conceptKey": "microbiology.antibiotics.quinolones.dna_gyrase",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Ticket 16: Génétique médicale subject + mendelian_genetics chapter
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('genetics', 'Génétique médicale', 'Medical Genetics', '🧬', '#1abc9c', 'Hérédité, mutations et maladies génétiques.', 11, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('genetics', 'mendelian_genetics', 'Génétique mendélienne', 'Les lois de l''hérédité et les modes de transmission.', '🧬', 1, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET
+  title_fr = EXCLUDED.title_fr, description_fr = EXCLUDED.description_fr,
+  icon = EXCLUDED.icon, order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+-- ============================================================
+-- Génétique médicale — mendelian_genetics — 3 niveaux
+-- ============================================================
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_gen1_id uuid;
+  v_level_gen2_id uuid;
+  v_level_gen3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'genetics' AND slug = 'mendelian_genetics';
+
+  -- ---- Niveau 1: Les chromosomes ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'gen_chromosomes',
+    'Les chromosomes',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les chromosomes",
+          "subtitle": "46 chromosomes, 23 paires, trisomie 21",
+          "body": "Le génome humain est organisé en 46 chromosomes, regroupés en 23 paires homologues. Les 22 premières paires sont des autosomes ; la 23e paire est constituée des chromosomes sexuels (XX chez la femme, XY chez l'homme). Un caryotype anormal peut résulter de non-disjonctions méiotiques. La trisomie 21 (syndrome de Down) résulte de la présence d'un chromosome 21 supplémentaire (trois copies au lieu de deux), due à une non-disjonction méiotique dans la plupart des cas.",
+          "sourceRefs": [{"title": "Open educational genetics references", "type": "open_educational", "chapter": "Chromosomes"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "gen_chrom_nb_001",
+          "question": "Nombre de chromosomes humains ?",
+          "options": ["23 chromosomes (haploïde)", "46 chromosomes (23 paires)", "48 chromosomes (24 paires)", "44 autosomes seulement"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "gen_trisomy_001",
+          "prompt": "La trisomie 21 résulte d'un chromosome ___ supplémentaire.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Chromosomes terminés",
+          "body": "Tu connais maintenant l'organisation chromosomique humaine et les bases des aneuploïdies.",
+          "masteredConcepts": ["genetics.chromosomes.karyotype", "genetics.chromosomes.trisomy21"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_gen1_id;
+
+  IF v_level_gen1_id IS NULL THEN
+    SELECT id INTO v_level_gen1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'gen_chromosomes';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_gen1_id,
+    $json${
+      "gen_chrom_nb_001": {
+        "correctIndex": 1,
+        "explanation": "Le génome humain diploïde contient 46 chromosomes organisés en 23 paires homologues : 22 paires d'autosomes et 1 paire de chromosomes sexuels.",
+        "conceptKey": "genetics.chromosomes.diploid_number",
+        "sourceRefs": []
+      },
+      "gen_trisomy_001": {
+        "acceptedAnswers": ["21"],
+        "explanation": "La trisomie 21 est caractérisée par la présence de trois copies du chromosome 21 au lieu de deux. Elle est la cause la plus fréquente de déficience intellectuelle d'origine génétique.",
+        "conceptKey": "genetics.chromosomes.trisomy21.chromosome",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Modes de transmission ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'gen_inheritance',
+    'Modes de transmission',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Modes de transmission",
+          "subtitle": "AD 50 %, AR 25 %, lié à l'X ; exemples cliniques",
+          "body": "Les maladies génétiques suivent différents modes de transmission. En transmission autosomique dominante (AD), un allèle muté suffit ; le risque de transmission est de 50 % à chaque grossesse. Exemples : syndrome de Marfan, maladie de Huntington. En transmission autosomique récessive (AR), deux allèles mutés sont nécessaires ; le risque est de 25 % si les deux parents sont porteurs. Exemple : mucoviscidose (CFTR). En transmission liée à l'X récessif (XR), les garçons sont atteints (hémizygotes), les filles peuvent être conductrices. Exemple : hémophilie A (F8).",
+          "sourceRefs": [{"title": "Open educational genetics references", "type": "open_educational", "chapter": "Inheritance patterns"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "gen_mucovis_001",
+          "question": "Mode de transmission de la mucoviscidose ?",
+          "options": ["Autosomique dominante", "Liée à l'X récessif", "Autosomique récessive", "Mitochondriale"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "gen_ad_risk_001",
+          "prompt": "En transmission autosomique dominante, le risque de transmission est de ___ %.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Modes de transmission terminés",
+          "body": "Tu connais maintenant les trois principaux modes de transmission héréditaire.",
+          "masteredConcepts": ["genetics.inheritance.autosomal_dominant", "genetics.inheritance.autosomal_recessive", "genetics.inheritance.x_linked"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_gen2_id;
+
+  IF v_level_gen2_id IS NULL THEN
+    SELECT id INTO v_level_gen2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'gen_inheritance';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_gen2_id,
+    $json${
+      "gen_mucovis_001": {
+        "correctIndex": 2,
+        "explanation": "La mucoviscidose est une maladie autosomique récessive due à des mutations du gène CFTR. Les deux parents doivent être porteurs hétérozygotes pour qu'un enfant soit atteint, avec un risque de 25 % à chaque grossesse.",
+        "conceptKey": "genetics.inheritance.autosomal_recessive.cystic_fibrosis",
+        "sourceRefs": []
+      },
+      "gen_ad_risk_001": {
+        "acceptedAnswers": ["50"],
+        "explanation": "En transmission autosomique dominante, un parent atteint (hétérozygote) a 50 % de risque de transmettre l'allèle muté à chaque enfant, indépendamment du sexe.",
+        "conceptKey": "genetics.inheritance.autosomal_dominant.risk",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Mutations et oncogènes ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'gen_mutations',
+    'Mutations et oncogènes',
+    3,
+    'medium',
+    150,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Mutations et oncogènes",
+          "subtitle": "Mutation ponctuelle, décalage du cadre, oncogènes vs suppresseurs de tumeur",
+          "body": "Une mutation ponctuelle substitue un seul nucléotide, pouvant modifier un acide aminé (mutation faux-sens) ou créer un codon stop prématuré (non-sens). Une mutation décalant le cadre de lecture (insertion/délétion) modifie tous les codons en aval. Les oncogènes sont des gènes dont l'activation favorise la prolifération cellulaire (gain de fonction, mutation dominante). Les gènes suppresseurs de tumeur freinent la prolifération ; leur perte des deux allèles (modèle à deux coups de Knudson) lève ce frein. BRCA1 et BRCA2 sont des gènes suppresseurs de tumeur impliqués dans la réparation de l'ADN ; leurs mutations augmentent fortement le risque de cancers du sein et de l'ovaire.",
+          "sourceRefs": [{"title": "Open educational genetics references", "type": "open_educational", "chapter": "Mutations and cancer"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "gen_brca_cc_001",
+          "scenario": "Une femme de 32 ans est porteuse d'une mutation BRCA1. Sa mère et sa tante ont eu un cancer du sein. Le risque pour les porteuses est estimé à 60-70%.",
+          "question": "Quel est le mode de transmission de la mutation BRCA1 ?",
+          "options": ["Autosomique récessif", "Lié à l'X", "Autosomique dominant", "Mitochondrial"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "gen_tsg_001",
+          "question": "Exemple de gène suppresseur de tumeur ?",
+          "options": ["BRCA1", "RAS", "MYC", "HER2"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Mutations et oncogènes terminés",
+          "body": "Tu connais maintenant les types de mutations et leur rôle dans la carcinogenèse.",
+          "masteredConcepts": ["genetics.mutations.point_mutation", "genetics.mutations.frameshift", "genetics.cancer.oncogenes", "genetics.cancer.tumor_suppressors"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_gen3_id;
+
+  IF v_level_gen3_id IS NULL THEN
+    SELECT id INTO v_level_gen3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'gen_mutations';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_gen3_id,
+    $json${
+      "gen_brca_cc_001": {
+        "correctIndex": 2,
+        "explanation": "La mutation BRCA1 se transmet sur le mode autosomique dominant : un seul allèle muté suffit à augmenter considérablement le risque de cancer. Chaque enfant d'un parent porteur a 50 % de risque d'hériter de la mutation.",
+        "conceptKey": "genetics.cancer.brca1.inheritance",
+        "sourceRefs": []
+      },
+      "gen_tsg_001": {
+        "correctIndex": 0,
+        "explanation": "BRCA1 est un gène suppresseur de tumeur qui code pour une protéine impliquée dans la réparation des cassures double brin de l'ADN par recombinaison homologue. Sa perte de fonction prédispose aux cancers du sein et de l'ovaire.",
+        "conceptKey": "genetics.cancer.tumor_suppressors.brca1",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
