@@ -12,11 +12,12 @@ const NAV = [
 export default function BottomNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed bottom-0 left-0 right-0 flex border-t" style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border-soft)" }}>
+    <nav aria-label="Navigation principale" className="fixed bottom-0 left-0 right-0 flex border-t" style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border-soft)" }}>
       {NAV.map((item) => (
         <Link
           key={item.href}
           href={item.href}
+          aria-current={pathname === item.href ? "page" : undefined}
           className="flex-1 flex flex-col items-center py-3 text-xs gap-1 transition-colors"
           style={{ color: pathname === item.href ? "var(--anatomy)" : "var(--text-muted)" }}
         >

@@ -1,6 +1,20 @@
 # Masteri
 
-Application d'apprentissage médical progressive.
+> Maîtrisez les sciences médicales, niveau par niveau.
+
+Application d'apprentissage médical progressive inspirée de Duolingo : progression par niveaux, XP, streak, révisions espacées (SM-2), QCM, questions à trou et génération de contenu par IA.
+
+## Stack technique
+
+| Couche | Technologie |
+|---|---|
+| Web | Next.js 15, App Router, TypeScript strict |
+| Styling | Tailwind CSS + CSS variables |
+| Auth & DB | Supabase Auth + PostgreSQL + RLS |
+| Business logic | `@masteri/core` — Zod, SM-2, scoring, badges |
+| IA | Anthropic API (`claude-sonnet-4-6`) |
+| Tests | Vitest (unitaires) + Playwright (E2E) |
+| Monorepo | pnpm workspaces |
 
 ## Installation
 
@@ -10,83 +24,107 @@ pnpm install
 
 ## Variables d'environnement
 
-Copy `.env.example` to `apps/web/.env.local` and fill in:
-
-- `NEXT_PUBLIC_SUPABASE_URL` — your Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — your Supabase anon key
-- `SUPABASE_SERVICE_ROLE_KEY` — your Supabase service role key (server only)
-
-## Lancement
+Copie `apps/web/.env.local.example` vers `apps/web/.env.local` :
 
 ```bash
-pnpm dev
+cp apps/web/.env.local.example apps/web/.env.local
 ```
 
-## Migrations Supabase
+Remplis les valeurs :
 
-Apply migrations via the Supabase dashboard SQL editor or CLI:
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL du projet Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clé anon Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role (serveur uniquement) |
+| `ANTHROPIC_API_KEY` | Clé Anthropic (optionnel, active la génération IA) |
+| `ANTHROPIC_MODEL` | Modèle Anthropic (défaut : `claude-sonnet-4-6`) |
+
+## Supabase — Migrations & Seed
+
+Dans le SQL Editor de ton projet Supabase, exécute dans cet ordre :
+
+1. `packages/db/supabase/migrations/0001_initial_schema.sql`
+2. `packages/db/supabase/migrations/0002_badges.sql`
+3. `packages/db/supabase/migrations/0003_ai_content.sql`
+4. `packages/db/supabase/seed.sql`
+
+## Développement
 
 ```bash
-supabase db reset
-```
-
-Run migrations in order:
-1. `packages/db/supabase/migrations/0001_initial_schema.sql` — core schema
-2. `packages/db/supabase/migrations/0002_badges.sql` — badges & user_badges tables
-
-## Seed
-
-Run `packages/db/supabase/seed.sql` in the Supabase SQL editor after migrations.
-
-## Tests
-
-```bash
-pnpm test
+pnpm dev        # Lance l'app web sur localhost:3000
+pnpm test       # Tests unitaires (Vitest)
+pnpm typecheck  # Vérification TypeScript
+pnpm lint       # ESLint
+pnpm build      # Build de production
+pnpm e2e        # Tests E2E Playwright (app doit tourner)
 ```
 
 ## Architecture
 
-- `apps/web` — Next.js App Router web application
-- `packages/core` — Business logic: lesson schema (Zod), scoring, SM-2, progress, badges
-- `packages/db` — SQL migrations and seed data
-- `packages/content` — Educational content seeds
-- `packages/config` — Shared TypeScript and ESLint config
+```
+masteri/
+├── apps/web/                    # Next.js App Router
+│   ├── app/
+│   │   ├── (auth)/              # Login, Register
+│   │   ├── (app)/               # Home, Subject, Lesson, Reviews, Profile, Admin
+│   │   └── api/                 # Route handlers serveur
+│   ├── components/
+│   │   ├── layout/              # AppShell, Header, BottomNav
+│   │   ├── lesson/              # LessonPlayer, IntroStep, RecallStep, FillBlankStep, CompleteStep
+│   │   ├── providers/           # AuthProvider
+│   │   └── ui/                  # Button, Card, XPBar, BoneSVG, Skeleton, TimerRing...
+│   └── lib/
+│       ├── supabase/            # browser.ts, server.ts, admin.ts
+│       ├── ai/                  # generate-content.ts
+│       └── rate-limit.ts
+│
+├── packages/core/               # Logique métier partagée
+│   ├── lesson-schema.ts         # Schémas Zod
+│   ├── scoring.ts               # Calcul XP
+│   ├── sm2.ts                   # Algorithme SM-2
+│   ├── badges.ts                # Évaluation badges
+│   └── progress.ts
+│
+├── packages/db/
+│   └── supabase/
+│       ├── migrations/          # 0001, 0002, 0003
+│       └── seed.sql             # Anatomie, 6 niveaux
+│
+└── packages/content/
+    └── anatomy/skeletal-system.seed.json
+```
 
-## Features by Ticket
+## Fonctionnalités MVP
 
-### Ticket 01 — MVP Foundation
-- Auth (Supabase), profiles, lesson attempts, scoring, XP, streak
-- 6 anatomy levels with fill_blank + recall steps
+- ✅ Authentification (email/password)
+- ✅ Leçons : intro → recall (QCM) → fill_blank → complete
+- ✅ Validation des réponses côté serveur
+- ✅ XP et progression persistés en base
+- ✅ Répétition espacée SM-2
+- ✅ Badges (8 types)
+- ✅ Objectif quotidien configurable
+- ✅ Freemium (3 leçons/jour gratuit)
+- ✅ Pipeline IA (génération de brouillons)
+- ✅ Interface d'administration
+- ✅ Visualisation SVG des os
+- ✅ Analytics d'erreurs personnelles
+- ✅ PWA manifest
 
-### Ticket 02 — Spaced Repetition & Reviews
-- SM-2 algorithm, spaced_rep_cards, /reviews page
-- Daily review queue with due card count on home
+## Sécurité
 
-### Ticket 03 — SVG Visuals & Analytics
-- SVG bone diagrams in intro steps (femur, tibia, cranium, etc.)
-- Error analytics dashboard `/analytics/errors`
-- Playwright e2e setup
+- RLS activé sur toutes les tables
+- `user_id` toujours dérivé de la session serveur
+- Answer keys jamais exposées avant soumission
+- XP et progression calculés côté serveur
+- Service role uniquement dans les route handlers serveur
+- Rate limiting sur les routes sensibles
 
-### Ticket 04 — Social & Gamification
-- **Badges system**: 8 badge types awarded on lesson completion
-  - `first_level_complete` — first level finished
-  - `perfect_score` — 100% score on a level
-  - `streak_days` — consecutive daily streak (3 and 7 day milestones)
-  - `total_xp` — XP thresholds (100 and 500 XP)
-  - `levels_complete_count` — number of completed levels (3 and 6)
-- Badges displayed in lesson summary and on profile page
-- **Daily XP goal** — configurable per-user (3/5/10/15/20 levels/day) via profile page
-- **XP history chart** — 7-day bar chart on profile page
-- **Home page** — today's XP vs daily goal, levels completed today
-- Migration: `packages/db/supabase/migrations/0002_badges.sql`
+## Hors scope (à venir)
 
-## Hors scope
-
-- 3D viewer
-- Expo mobile app
-- Stripe payments
-- AdMob
-- Push notifications
-- Weekly leagues
-- AI content generation
-- Offline mode
+- Expo mobile
+- Stripe (paiement)
+- Ligues hebdomadaires
+- Notifications push
+- Mode hors-ligne
+- Viewer 3D

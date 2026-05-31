@@ -1,4 +1,5 @@
 export const metadata = { title: "Leçon" };
+export const dynamic = "force-dynamic";
 
 import LessonPlayer from "@/components/lesson/LessonPlayer";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";

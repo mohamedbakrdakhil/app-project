@@ -24,6 +24,7 @@ export default function Button({ variant = "primary", loading, children, classNa
       className={`${base} ${variants[variant]} ${className}`}
       style={styles[variant]}
       disabled={loading ?? props.disabled}
+      aria-busy={loading ?? undefined}
       {...props}
     >
       {loading ? "..." : children}

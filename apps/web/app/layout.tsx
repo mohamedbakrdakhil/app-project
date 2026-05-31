@@ -7,6 +7,12 @@ export const metadata: Metadata = {
   keywords: ["médecine", "anatomie", "apprentissage", "étudiants", "QCM", "révisions"],
   authors: [{ name: "Masteri" }],
   robots: { index: false, follow: false },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Masteri",
+  },
   openGraph: {
     title: "Masteri",
     description: "Maîtrisez les sciences médicales, niveau par niveau.",
@@ -19,6 +25,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  themeColor: "#ff4d6d",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

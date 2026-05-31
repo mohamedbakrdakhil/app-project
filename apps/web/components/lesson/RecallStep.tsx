@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { RecallStep } from "@masteri/core";
 import TimerRing from "@/components/ui/TimerRing";
 import Button from "@/components/ui/Button";
@@ -23,7 +23,7 @@ export default function RecallStepView({ step, onAnswer, onNext }: RecallStepPro
   const [loading, setLoading] = useState(false);
   const [, setTimerExpired] = useState(false);
 
-  const handleSelect = async (idx: number) => {
+  const handleSelect = useCallback(async (idx: number) => {
     if (feedback ?? loading) return;
     setSelected(idx);
     setLoading(true);
@@ -35,7 +35,20 @@ export default function RecallStepView({ step, onAnswer, onNext }: RecallStepPro
     } finally {
       setLoading(false);
     }
-  };
+  }, [feedback, loading, onAnswer, step.questionKey]);
+
+  useEffect(() => {
+    if (feedback) return;
+    const handler = (e: KeyboardEvent) => {
+      const key = e.key;
+      if (key === "1") handleSelect(0);
+      else if (key === "2") handleSelect(1);
+      else if (key === "3") handleSelect(2);
+      else if (key === "4") handleSelect(3);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [feedback, handleSelect]);
 
   const getOptionStyle = (idx: number): React.CSSProperties => {
     if (!feedback) {
@@ -63,19 +76,27 @@ export default function RecallStepView({ step, onAnswer, onNext }: RecallStepPro
           <TimerRing totalSeconds={step.timerSeconds} onExpire={() => setTimerExpired(true)} />
         )}
       </div>
-      <div className="space-y-3">
+      <div role="group" aria-label="Options de réponse" className="space-y-3">
         {step.options.map((opt, idx) => (
           <button
             key={idx}
+            role="radio"
+            aria-checked={selected === idx}
             onClick={() => handleSelect(idx)}
             disabled={!!feedback || loading}
             className="w-full text-left px-4 py-3 rounded-xl transition-all"
             style={getOptionStyle(idx)}
           >
+            <span className="mr-2 text-xs opacity-50">{idx + 1}.</span>
             {opt}
           </button>
         ))}
       </div>
+      {!feedback && (
+        <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>
+          Appuie sur 1–4 pour répondre
+        </p>
+      )}
       {feedback && (
         <div className="space-y-3">
           <div className="p-4 rounded-xl" style={{ backgroundColor: feedback.isCorrect ? "rgba(0,255,120,0.1)" : "rgba(255,85,85,0.1)", border: `1px solid ${feedback.isCorrect ? "var(--success)" : "var(--error)"}` }}>

@@ -6,8 +6,8 @@ interface SkeletonProps {
 export function Skeleton({ className = "", style }: SkeletonProps) {
   return (
     <div
-      className={`animate-pulse rounded-xl ${className}`}
-      style={{ backgroundColor: "var(--bg-card)", ...style }}
+      className={`rounded-xl skeleton-shimmer ${className}`}
+      style={{ minHeight: "1rem", ...style }}
     />
   );
 }

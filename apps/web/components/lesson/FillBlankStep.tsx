@@ -51,6 +51,7 @@ export default function FillBlankStepView({ step, onAnswer, onNext }: Props) {
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
+            aria-label="Ta réponse"
             placeholder="Ta réponse..."
             autoFocus
             className="w-full px-4 py-3 rounded-xl text-sm outline-none"
