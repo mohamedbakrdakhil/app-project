@@ -1,0 +1,180 @@
+{
+  "subject": "biochemistry",
+  "chapter": "proteins",
+  "levels": [
+    {
+      "slug": "amino_acids",
+      "title_fr": "Les acides aminés",
+      "order_index": 1,
+      "difficulty": "easy",
+      "xp_reward": 100,
+      "content": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "Les acides aminés",
+            "body": "20 acides aminés standard, tous avec un groupement amine (NH2), un groupement carboxyle (COOH) et une chaîne latérale (R). 9 acides aminés essentiels (non synthétisés par l'organisme, apportés par l'alimentation). Structure : chirale, configuration L.",
+            "sourceRefs": []
+          },
+          {
+            "type": "recall",
+            "questionKey": "aa_essential_001",
+            "question": "Combien y a-t-il d'acides aminés essentiels chez l'adulte ?",
+            "options": ["9", "20", "12", "4"],
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "aa_groups_001",
+            "prompt": "Chaque acide aminé possède un groupement ___ et un groupement carboxyle.",
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Acides aminés maîtrisés",
+            "body": "Tu connais maintenant la structure et la classification des acides aminés.",
+            "masteredConcepts": ["biochemistry.proteins.amino_acids.essential", "biochemistry.proteins.amino_acids.structure"]
+          }
+        ]
+      },
+      "answer_keys": {
+        "aa_essential_001": {
+          "correctIndex": 0,
+          "explanation": "Il y a 9 acides aminés essentiels chez l'adulte : histidine, isoleucine, leucine, lysine, méthionine, phénylalanine, thréonine, tryptophane, valine.",
+          "conceptKey": "biochemistry.proteins.amino_acids.essential",
+          "sourceRefs": []
+        },
+        "aa_groups_001": {
+          "acceptedAnswers": ["amine", "aminé", "NH2"],
+          "explanation": "Chaque acide aminé possède un groupement amine (–NH2), un groupement carboxyle (–COOH) et une chaîne latérale (R) qui différencie les 20 acides aminés.",
+          "conceptKey": "biochemistry.proteins.amino_acids.structure",
+          "sourceRefs": []
+        }
+      }
+    },
+    {
+      "slug": "protein_structure",
+      "title_fr": "La structure des protéines",
+      "order_index": 2,
+      "difficulty": "medium",
+      "xp_reward": 120,
+      "content": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "La structure des protéines",
+            "body": "4 niveaux de structure. Primaire: séquence d'AA. Secondaire: hélice alpha, feuillet bêta (liaisons hydrogène). Tertiaire: repliement 3D (liaisons covalentes, hydrophobes, ioniques). Quaternaire: assemblage de plusieurs chaînes polypeptidiques (ex: hémoglobine = 4 chaînes).",
+            "sourceRefs": []
+          },
+          {
+            "type": "image_label",
+            "title": "Les niveaux de structure des protéines",
+            "imageAlt": "Les niveaux de structure des protéines",
+            "labels": [
+              {"id": "p", "text": "Structure primaire", "position": {"x": 15, "y": 20}},
+              {"id": "s", "text": "Structure secondaire", "position": {"x": 40, "y": 20}},
+              {"id": "t", "text": "Structure tertiaire", "position": {"x": 65, "y": 20}},
+              {"id": "q", "text": "Structure quaternaire", "position": {"x": 85, "y": 20}}
+            ],
+            "sourceRefs": []
+          },
+          {
+            "type": "recall",
+            "questionKey": "protein_struct_001",
+            "question": "Quelle protéine est un exemple classique de structure quaternaire ?",
+            "options": ["L'hémoglobine", "L'albumine", "La kératine", "Le collagène de type I"],
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "protein_helix_001",
+            "prompt": "La structure secondaire en ___ alpha est stabilisée par des liaisons hydrogène.",
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Structure des protéines maîtrisée",
+            "body": "Tu connais maintenant les 4 niveaux de structure des protéines.",
+            "masteredConcepts": ["biochemistry.proteins.structure.primary", "biochemistry.proteins.structure.quaternary"]
+          }
+        ]
+      },
+      "answer_keys": {
+        "protein_struct_001": {
+          "correctIndex": 0,
+          "explanation": "L'hémoglobine est l'exemple classique de structure quaternaire : elle est composée de 4 chaînes polypeptidiques (2 alpha et 2 bêta) associées.",
+          "conceptKey": "biochemistry.proteins.structure.quaternary",
+          "sourceRefs": []
+        },
+        "protein_helix_001": {
+          "acceptedAnswers": ["hélice", "helice"],
+          "explanation": "L'hélice alpha est une structure secondaire en spirale stabilisée par des liaisons hydrogène entre les groupements C=O et N-H des acides aminés.",
+          "conceptKey": "biochemistry.proteins.structure.primary",
+          "sourceRefs": []
+        }
+      }
+    },
+    {
+      "slug": "enzymes",
+      "title_fr": "Les enzymes",
+      "order_index": 3,
+      "difficulty": "medium",
+      "xp_reward": 120,
+      "content": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "Les enzymes",
+            "body": "Enzymes = protéines catalytiques. Caractéristiques: spécificité de substrat, site actif, saturation (cinétique de Michaelis-Menten), régulation allostérique, cofacteurs. Km = constante de Michaelis (affinité inverse). Vmax = vitesse maximale.",
+            "sourceRefs": []
+          },
+          {
+            "type": "recall",
+            "questionKey": "enzyme_km_001",
+            "question": "Que mesure la constante de Michaelis (Km) d'une enzyme ?",
+            "options": ["L'affinité de l'enzyme pour son substrat (Km faible = forte affinité)", "La vitesse maximale de la réaction", "La concentration en enzyme", "Le pH optimal de la réaction"],
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "enzyme_site_001",
+            "prompt": "Le substrat se fixe sur le ___ actif de l'enzyme.",
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Enzymes maîtrisées",
+            "body": "Tu comprends maintenant la cinétique enzymatique et le concept de site actif.",
+            "masteredConcepts": ["biochemistry.enzymes.km", "biochemistry.enzymes.active_site"]
+          }
+        ]
+      },
+      "answer_keys": {
+        "enzyme_km_001": {
+          "correctIndex": 0,
+          "explanation": "Le Km (constante de Michaelis) représente la concentration en substrat pour laquelle la vitesse est égale à Vmax/2. Un Km faible indique une forte affinité de l'enzyme pour son substrat.",
+          "conceptKey": "biochemistry.enzymes.km",
+          "sourceRefs": []
+        },
+        "enzyme_site_001": {
+          "acceptedAnswers": ["site"],
+          "explanation": "Le substrat se fixe spécifiquement sur le site actif de l'enzyme, formant un complexe enzyme-substrat. La spécificité du site actif détermine la sélectivité enzymatique.",
+          "conceptKey": "biochemistry.enzymes.active_site",
+          "sourceRefs": []
+        }
+      }
+    }
+  ]
+}

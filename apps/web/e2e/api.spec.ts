@@ -70,4 +70,16 @@ test.describe("API routes (unauthenticated)", () => {
     });
     expect(res.status()).toBe(401);
   });
+
+  test("reviews/due with subject filter returns 401 without auth", async ({ request }) => {
+    const res = await request.get("/api/reviews/due?subject=anatomy");
+    expect(res.status()).toBe(401);
+  });
+
+  test("reviews/submit returns 401 without auth", async ({ request }) => {
+    const res = await request.post("/api/reviews/submit", {
+      data: { cardId: "00000000-0000-0000-0000-000000000000", quality: 3 },
+    });
+    expect(res.status()).toBe(401);
+  });
 });

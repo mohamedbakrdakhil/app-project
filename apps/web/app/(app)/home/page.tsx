@@ -17,13 +17,14 @@ export default async function HomePage() {
   const admin = createSupabaseAdminClient();
 
   const todayStr = new Date().toISOString().split("T")[0]!;
-  const [profileRes, subjectsRes, allLevelsRes, progressRes, dueRes, todayActivityRes] = await Promise.all([
+  const [profileRes, subjectsRes, allLevelsRes, progressRes, dueRes, todayActivityRes, chapterLevelsRes] = await Promise.all([
     admin.from("profiles").select("full_name, email, streak, total_xp, daily_goal").eq("id", user.id).single(),
     admin.from("subjects").select("id, name_fr, icon, color, description_fr").eq("is_published", true).order("order_index"),
     admin.from("levels").select("id, chapter_id, title_fr, order_index").eq("is_published", true).order("order_index"),
     admin.from("user_progress").select("level_id, is_completed").eq("user_id", user.id),
     admin.from("spaced_rep_cards").select("id", { count: "exact", head: true }).eq("user_id", user.id).lte("next_review_date", todayStr),
     admin.from("streak_history").select("xp_earned, levels_completed").eq("user_id", user.id).eq("activity_date", todayStr).maybeSingle(),
+    admin.from("chapters").select("id, subject_id").eq("is_published", true),
   ]);
 
   const profile = profileRes.data;
@@ -37,6 +38,23 @@ export default async function HomePage() {
   const allLevels = allLevelsRes.data ?? [];
   const progressData = progressRes.data ?? [];
   const completedSet = new Set(progressData.filter((p) => p.is_completed).map((p) => p.level_id));
+
+  // Per-subject progress
+  const chapters = chapterLevelsRes.data ?? [];
+  const chapterToSubject = new Map<string, string>();
+  for (const ch of chapters) {
+    chapterToSubject.set(ch.id, ch.subject_id);
+  }
+  const subjectLevelCount = new Map<string, number>();
+  const subjectCompletedCount = new Map<string, number>();
+  for (const level of allLevels) {
+    const subjectId = chapterToSubject.get(level.chapter_id);
+    if (!subjectId) continue;
+    subjectLevelCount.set(subjectId, (subjectLevelCount.get(subjectId) ?? 0) + 1);
+    if (completedSet.has(level.id)) {
+      subjectCompletedCount.set(subjectId, (subjectCompletedCount.get(subjectId) ?? 0) + 1);
+    }
+  }
 
   const byChapter = new Map<string, Array<{ id: string; title_fr: string; order_index: number }>>();
   for (const l of allLevels) {
@@ -105,16 +123,23 @@ export default async function HomePage() {
       <div>
         <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>Matières</h2>
         <div className="space-y-3">
-          {subjects.map((s) => (
-            <SubjectCard
-              key={s.id}
-              id={s.id}
-              nameFr={s.name_fr}
-              icon={s.icon ?? "📚"}
-              color={s.color ?? "var(--anatomy)"}
-              descriptionFr={s.description_fr}
-            />
-          ))}
+          {subjects.map((s) => {
+            const total = subjectLevelCount.get(s.id) ?? 0;
+            const completed = subjectCompletedCount.get(s.id) ?? 0;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+            return (
+              <SubjectCard
+                key={s.id}
+                id={s.id}
+                nameFr={s.name_fr}
+                icon={s.icon ?? "📚"}
+                color={s.color ?? "var(--anatomy)"}
+                descriptionFr={s.description_fr}
+                progressPct={pct}
+                levelCount={total}
+              />
+            );
+          })}
           {subjects.length === 0 && (
             <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>Aucune matière disponible pour le moment.</p>
           )}

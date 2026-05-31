@@ -1415,3 +1415,543 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Ticket 10: Pathologie & Biochimie subjects
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, is_published)
+VALUES
+  ('pathology', 'Pathologie', 'Pathology', '🧫', '#ff6b35', 'Comprends les mécanismes des maladies et leurs manifestations.', 5, true),
+  ('biochemistry', 'Biochimie', 'Biochemistry', '⚗️', '#00ff99', 'Les molécules du vivant : protéines, glucides, lipides et acides nucléiques.', 6, true)
+ON CONFLICT (id) DO UPDATE SET
+  name_fr = EXCLUDED.name_fr, name_en = EXCLUDED.name_en, icon = EXCLUDED.icon,
+  color = EXCLUDED.color, description_fr = EXCLUDED.description_fr,
+  order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+-- Pathologie — Chapitre Inflammation
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('pathology', 'inflammation', 'Inflammation', 'Les mécanismes de la réponse inflammatoire aiguë et chronique.', '🔥', 1, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET title_fr=EXCLUDED.title_fr, description_fr=EXCLUDED.description_fr, icon=EXCLUDED.icon, order_index=EXCLUDED.order_index, is_published=EXCLUDED.is_published;
+
+-- Biochimie — Chapitre Les protéines
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('biochemistry', 'proteins', 'Les protéines', 'Structure, fonction et métabolisme des protéines.', '🧬', 1, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET title_fr=EXCLUDED.title_fr, description_fr=EXCLUDED.description_fr, icon=EXCLUDED.icon, order_index=EXCLUDED.order_index, is_published=EXCLUDED.is_published;
+
+-- ============================================================
+-- Pathologie — Inflammation — 3 niveaux
+-- ============================================================
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_acute_id uuid;
+  v_level_cells_id uuid;
+  v_level_chronic_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'pathology' AND slug = 'inflammation';
+
+  IF v_chapter_id IS NULL THEN
+    RAISE EXCEPTION 'Chapter pathology/inflammation not found';
+  END IF;
+
+  -- ---- L'inflammation aigue ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'inflammation_aigue',
+    'L''inflammation aiguë — définition',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "L'inflammation aiguë — définition",
+          "body": "L'inflammation est une réponse de défense de l'organisme aux agressions (infection, traumatisme, nécrose). Signes cardinaux : rougeur, chaleur, œdème, douleur, impotence fonctionnelle. Médiateurs : histamine, prostaglandines, cytokines.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "inflam_signs_001",
+          "question": "Quels sont les 4 signes cardinaux classiques de l'inflammation ?",
+          "options": ["Rougeur, chaleur, œdème, douleur", "Fièvre, toux, dyspnée, fatigue", "Pâleur, froideur, sécheresse, prurit", "Hypertension, bradycardie, mydriase, sudation"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "inflam_mediator_001",
+          "prompt": "L'___ est un médiateur chimique libéré par les mastocytes lors de l'inflammation.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Inflammation aiguë maîtrisée",
+          "body": "Tu connais maintenant la définition et les signes cardinaux de l'inflammation aiguë.",
+          "masteredConcepts": ["pathology.inflammation.acute.definition", "pathology.inflammation.acute.cardinal_signs"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_acute_id;
+
+  IF v_level_acute_id IS NULL THEN
+    SELECT id INTO v_level_acute_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'inflammation_aigue';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_acute_id,
+    $json${
+      "inflam_signs_001": {
+        "correctIndex": 0,
+        "explanation": "Les 4 signes cardinaux de l'inflammation sont la rougeur (rubor), la chaleur (calor), l'œdème (tumor) et la douleur (dolor).",
+        "conceptKey": "pathology.inflammation.acute.cardinal_signs",
+        "sourceRefs": []
+      },
+      "inflam_mediator_001": {
+        "acceptedAnswers": ["histamine"],
+        "explanation": "L'histamine est libérée par les mastocytes lors de l'inflammation, provoquant vasodilatation et augmentation de la perméabilité vasculaire.",
+        "conceptKey": "pathology.inflammation.acute.definition",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Les cellules de l'inflammation ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'inflammation_cellules',
+    'Les cellules de l''inflammation',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les cellules de l'inflammation",
+          "body": "Cellules clés : neutrophiles (premiers arrivants, phagocytose), macrophages (phagocytose et présentation antigénique), lymphocytes T et B (immunité adaptative). Diapédèse = passage des leucocytes à travers la paroi vasculaire.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "inflam_cells_001",
+          "question": "Quelle cellule est la première à migrer vers le foyer inflammatoire ?",
+          "options": ["Le neutrophile", "Le macrophage", "Le lymphocyte B", "Le plasmocyte"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "inflam_diapedesis_001",
+          "prompt": "Le passage des leucocytes à travers la paroi des vaisseaux s'appelle la ___.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Cellules de l'inflammation maîtrisées",
+          "body": "Tu connais maintenant les cellules impliquées dans la réponse inflammatoire.",
+          "masteredConcepts": ["pathology.inflammation.cells.neutrophil", "pathology.inflammation.cells.diapedesis"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_cells_id;
+
+  IF v_level_cells_id IS NULL THEN
+    SELECT id INTO v_level_cells_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'inflammation_cellules';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_cells_id,
+    $json${
+      "inflam_cells_001": {
+        "correctIndex": 0,
+        "explanation": "Les neutrophiles sont les premiers leucocytes à migrer vers le foyer inflammatoire dans les premières heures.",
+        "conceptKey": "pathology.inflammation.cells.neutrophil",
+        "sourceRefs": []
+      },
+      "inflam_diapedesis_001": {
+        "acceptedAnswers": ["diapédèse", "diapedese"],
+        "explanation": "La diapédèse est le processus par lequel les leucocytes traversent activement la paroi des vaisseaux sanguins pour rejoindre le foyer inflammatoire.",
+        "conceptKey": "pathology.inflammation.cells.diapedesis",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- L'inflammation chronique ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'inflammation_chronique',
+    'L''inflammation chronique',
+    3,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "L'inflammation chronique",
+          "body": "L'inflammation chronique = persistance > 6 semaines. Caractérisée par infiltrat lympho-plasmocytaire, fibrose, nécrose. Exemples: tuberculose (granulome), polyarthrite rhumatoïde, maladie de Crohn.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "inflam_chronic_001",
+          "question": "Quelle lésion histologique est caractéristique de l'inflammation granulomateuse comme la tuberculose ?",
+          "options": ["Le granulome épithélioïde et gigantocellulaire", "L'œdème interstitiel", "La stéatose hépatique", "La métaplasie malpighienne"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "inflam_duration_001",
+          "prompt": "On parle d'inflammation chronique lorsqu'elle persiste au-delà de ___ semaines.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Inflammation chronique maîtrisée",
+          "body": "Tu comprends maintenant les caractéristiques de l'inflammation chronique.",
+          "masteredConcepts": ["pathology.inflammation.chronic.definition", "pathology.inflammation.chronic.granuloma"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_chronic_id;
+
+  IF v_level_chronic_id IS NULL THEN
+    SELECT id INTO v_level_chronic_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'inflammation_chronique';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_chronic_id,
+    $json${
+      "inflam_chronic_001": {
+        "correctIndex": 0,
+        "explanation": "Le granulome épithélioïde et gigantocellulaire est la lésion caractéristique de la tuberculose et des inflammations granulomateuses.",
+        "conceptKey": "pathology.inflammation.chronic.granuloma",
+        "sourceRefs": []
+      },
+      "inflam_duration_001": {
+        "acceptedAnswers": ["6", "six"],
+        "explanation": "L'inflammation chronique est définie par une durée supérieure à 6 semaines.",
+        "conceptKey": "pathology.inflammation.chronic.definition",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Biochimie — Les protéines — 3 niveaux
+-- ============================================================
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_aa_id uuid;
+  v_level_struct_id uuid;
+  v_level_enzyme_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'biochemistry' AND slug = 'proteins';
+
+  IF v_chapter_id IS NULL THEN
+    RAISE EXCEPTION 'Chapter biochemistry/proteins not found';
+  END IF;
+
+  -- ---- Les acides aminés ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'amino_acids',
+    'Les acides aminés',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les acides aminés",
+          "body": "20 acides aminés standard, tous avec un groupement amine (NH2), un groupement carboxyle (COOH) et une chaîne latérale (R). 9 acides aminés essentiels (non synthétisés par l'organisme, apportés par l'alimentation). Structure : chirale, configuration L.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "aa_essential_001",
+          "question": "Combien y a-t-il d'acides aminés essentiels chez l'adulte ?",
+          "options": ["9", "20", "12", "4"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "aa_groups_001",
+          "prompt": "Chaque acide aminé possède un groupement ___ et un groupement carboxyle.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Acides aminés maîtrisés",
+          "body": "Tu connais maintenant la structure et la classification des acides aminés.",
+          "masteredConcepts": ["biochemistry.proteins.amino_acids.essential", "biochemistry.proteins.amino_acids.structure"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_aa_id;
+
+  IF v_level_aa_id IS NULL THEN
+    SELECT id INTO v_level_aa_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'amino_acids';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_aa_id,
+    $json${
+      "aa_essential_001": {
+        "correctIndex": 0,
+        "explanation": "Il y a 9 acides aminés essentiels chez l'adulte : histidine, isoleucine, leucine, lysine, méthionine, phénylalanine, thréonine, tryptophane, valine.",
+        "conceptKey": "biochemistry.proteins.amino_acids.essential",
+        "sourceRefs": []
+      },
+      "aa_groups_001": {
+        "acceptedAnswers": ["amine", "aminé", "NH2"],
+        "explanation": "Chaque acide aminé possède un groupement amine (NH2), un groupement carboxyle (COOH) et une chaîne latérale (R).",
+        "conceptKey": "biochemistry.proteins.amino_acids.structure",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- La structure des protéines ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'protein_structure',
+    'La structure des protéines',
+    2,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "La structure des protéines",
+          "body": "4 niveaux de structure. Primaire: séquence d'AA. Secondaire: hélice alpha, feuillet bêta (liaisons hydrogène). Tertiaire: repliement 3D (liaisons covalentes, hydrophobes, ioniques). Quaternaire: assemblage de plusieurs chaînes polypeptidiques (ex: hémoglobine = 4 chaînes).",
+          "sourceRefs": []
+        },
+        {
+          "type": "image_label",
+          "title": "Les niveaux de structure des protéines",
+          "imageAlt": "Les niveaux de structure des protéines",
+          "labels": [
+            {"id": "p", "text": "Structure primaire", "position": {"x": 15, "y": 20}},
+            {"id": "s", "text": "Structure secondaire", "position": {"x": 40, "y": 20}},
+            {"id": "t", "text": "Structure tertiaire", "position": {"x": 65, "y": 20}},
+            {"id": "q", "text": "Structure quaternaire", "position": {"x": 85, "y": 20}}
+          ],
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "protein_struct_001",
+          "question": "Quelle protéine est un exemple classique de structure quaternaire ?",
+          "options": ["L'hémoglobine", "L'albumine", "La kératine", "Le collagène de type I"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "protein_helix_001",
+          "prompt": "La structure secondaire en ___ alpha est stabilisée par des liaisons hydrogène.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Structure des protéines maîtrisée",
+          "body": "Tu connais maintenant les 4 niveaux de structure des protéines.",
+          "masteredConcepts": ["biochemistry.proteins.structure.primary", "biochemistry.proteins.structure.quaternary"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_struct_id;
+
+  IF v_level_struct_id IS NULL THEN
+    SELECT id INTO v_level_struct_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'protein_structure';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_struct_id,
+    $json${
+      "protein_struct_001": {
+        "correctIndex": 0,
+        "explanation": "L'hémoglobine est l'exemple classique de structure quaternaire : 4 chaînes polypeptidiques (2 alpha et 2 bêta) associées.",
+        "conceptKey": "biochemistry.proteins.structure.quaternary",
+        "sourceRefs": []
+      },
+      "protein_helix_001": {
+        "acceptedAnswers": ["hélice", "helice"],
+        "explanation": "L'hélice alpha est une structure secondaire en spirale stabilisée par des liaisons hydrogène entre les groupements C=O et N-H.",
+        "conceptKey": "biochemistry.proteins.structure.primary",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Les enzymes ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'enzymes',
+    'Les enzymes',
+    3,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les enzymes",
+          "body": "Enzymes = protéines catalytiques. Caractéristiques: spécificité de substrat, site actif, saturation (cinétique de Michaelis-Menten), régulation allostérique, cofacteurs. Km = constante de Michaelis (affinité inverse). Vmax = vitesse maximale.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "enzyme_km_001",
+          "question": "Que mesure la constante de Michaelis (Km) d'une enzyme ?",
+          "options": ["L'affinité de l'enzyme pour son substrat (Km faible = forte affinité)", "La vitesse maximale de la réaction", "La concentration en enzyme", "Le pH optimal de la réaction"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "enzyme_site_001",
+          "prompt": "Le substrat se fixe sur le ___ actif de l'enzyme.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Enzymes maîtrisées",
+          "body": "Tu comprends maintenant la cinétique enzymatique et le concept de site actif.",
+          "masteredConcepts": ["biochemistry.enzymes.km", "biochemistry.enzymes.active_site"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_enzyme_id;
+
+  IF v_level_enzyme_id IS NULL THEN
+    SELECT id INTO v_level_enzyme_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'enzymes';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_enzyme_id,
+    $json${
+      "enzyme_km_001": {
+        "correctIndex": 0,
+        "explanation": "Le Km représente la concentration en substrat pour laquelle la vitesse est égale à Vmax/2. Un Km faible indique une forte affinité.",
+        "conceptKey": "biochemistry.enzymes.km",
+        "sourceRefs": []
+      },
+      "enzyme_site_001": {
+        "acceptedAnswers": ["site"],
+        "explanation": "Le substrat se fixe spécifiquement sur le site actif de l'enzyme, formant un complexe enzyme-substrat.",
+        "conceptKey": "biochemistry.enzymes.active_site",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Ticket 10: New badges
+-- ============================================================
+
+INSERT INTO public.badges (id, name_fr, description_fr, icon, condition_type, condition_value)
+VALUES
+  ('curious', 'Curieux', 'Complète un niveau dans 3 matières différentes', '🌐', 'levels_complete_count', 1),
+  ('xp_1000', 'Maître', 'Accumule 1000 XP', '🎓', 'total_xp', 1000),
+  ('streak_14', 'Inarrêtable', '14 jours de streak consécutifs', '💫', 'streak_days', 14)
+ON CONFLICT (id) DO UPDATE SET
+  name_fr=EXCLUDED.name_fr, description_fr=EXCLUDED.description_fr,
+  icon=EXCLUDED.icon, condition_type=EXCLUDED.condition_type, condition_value=EXCLUDED.condition_value;

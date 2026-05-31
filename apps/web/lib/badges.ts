@@ -7,4 +7,7 @@ export const BADGE_LABELS: Record<string, { name: string; icon: string }> = {
   xp_500: { name: "Expert", icon: "🌟" },
   levels_3: { name: "Explorateur", icon: "🗺️" },
   levels_6: { name: "Anatomiste", icon: "🦴" },
+  curious: { name: "Curieux", icon: "🌐" },
+  xp_1000: { name: "Maître", icon: "🎓" },
+  streak_14: { name: "Inarrêtable", icon: "💫" },
 };
