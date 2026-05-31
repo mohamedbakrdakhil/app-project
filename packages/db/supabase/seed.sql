@@ -4886,3 +4886,529 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Ticket 17: Pathologie — Anatomopathologie générale (chapter 2)
+-- ============================================================
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('pathology', 'general_anatomo', 'Anatomopathologie générale', 'Techniques d''analyse tissulaire et lésions élémentaires.', '🔬', 2, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET title_fr=EXCLUDED.title_fr, description_fr=EXCLUDED.description_fr, icon=EXCLUDED.icon, order_index=EXCLUDED.order_index, is_published=EXCLUDED.is_published;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_tech_id uuid;
+  v_level_lesions_id uuid;
+  v_level_tumors_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'pathology' AND slug = 'general_anatomo';
+
+  IF v_chapter_id IS NULL THEN
+    RAISE EXCEPTION 'Chapter pathology/general_anatomo not found';
+  END IF;
+
+  -- ---- Niveau 1: Techniques histologiques ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'anatomo_techniques',
+    'Techniques histologiques',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Techniques histologiques",
+          "subtitle": "Coloration et immunohistochimie",
+          "body": "L'hématoxyline-éosine (HE) est la coloration de référence : l'hématoxyline colore les noyaux en bleu, l'éosine colore le cytoplasme en rose. La coloration PAS (periodic acid–Schiff) met en évidence le glycogène et les mucines. Le trichrome de Masson colore le collagène en vert et les fibres musculaires en rouge. L'immunohistochimie (IHC) utilise des anticorps dirigés contre des protéines spécifiques pour identifier des types cellulaires ou des marqueurs tumoraux dans les coupes tissulaires.",
+          "fact": "La coloration HE, développée au XIXe siècle, reste la technique histologique la plus utilisée en anatomopathologie diagnostique.",
+          "sourceRefs": [{"title": "Open educational pathology references", "type": "open_educational", "chapter": "Histological techniques"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "anatomo_he_001",
+          "question": "Colorant de référence en histologie ?",
+          "options": ["Hématoxyline-éosine (HE)", "PAS", "Trichrome de Masson", "Rouge Congo"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "anatomo_ihc_001",
+          "prompt": "L'immunohistochimie utilise des ___ pour identifier des protéines spécifiques dans les tissus.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Techniques histologiques terminées",
+          "body": "Tu connais maintenant les principales colorations et la technique IHC utilisées en anatomopathologie.",
+          "masteredConcepts": ["pathology.anatomo.techniques.he_staining", "pathology.anatomo.techniques.ihc"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_tech_id;
+
+  IF v_level_tech_id IS NULL THEN
+    SELECT id INTO v_level_tech_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'anatomo_techniques';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_tech_id,
+    $json${
+      "anatomo_he_001": {
+        "correctIndex": 0,
+        "explanation": "L'hématoxyline-éosine (HE) est la coloration de base en histologie : hématoxyline pour les noyaux (bleu) et éosine pour le cytoplasme (rose). Toute analyse histologique débute par cette coloration.",
+        "conceptKey": "pathology.anatomo.techniques.he_staining",
+        "sourceRefs": []
+      },
+      "anatomo_ihc_001": {
+        "acceptedAnswers": ["anticorps"],
+        "explanation": "L'immunohistochimie repose sur l'utilisation d'anticorps primaires dirigés contre des antigènes tissulaires spécifiques, révélés par un système de détection (chromogène ou fluorescent).",
+        "conceptKey": "pathology.anatomo.techniques.ihc",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Lésions élémentaires ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'anatomo_lesions',
+    'Lésions élémentaires',
+    2,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Lésions élémentaires",
+          "subtitle": "Nécrose, atrophie, hypertrophie, métaplasie, dysplasie",
+          "body": "Les lésions élémentaires représentent les réponses tissulaires aux agressions. La nécrose est une mort cellulaire pathologique : coagulative (protéines dénaturées, architecture préservée, ex. infarctus), liquéfactive (lyse complète, ex. abcès), caséeuse (aspect fromage blanc, caractéristique de la tuberculose). L'atrophie est la réduction du volume cellulaire ou de la masse d'un organe. L'hypertrophie est l'augmentation de la taille cellulaire. L'hyperplasie est l'augmentation du nombre de cellules. La métaplasie est la transformation réversible d'un tissu différencié en un autre tissu différencié (ex. épithélium cylindrique → épithélium malpighien dans l'œsophage de Barrett). La dysplasie est une anomalie de la différenciation cellulaire, considérée comme une lésion pré-néoplasique.",
+          "sourceRefs": [{"title": "Open educational pathology references", "type": "open_educational", "chapter": "Elementary lesions"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "anatomo_caseous_001",
+          "question": "Nécrose caséeuse caractéristique de ?",
+          "options": ["L'infarctus du myocarde", "La tuberculose", "L'abcès bactérien", "L'embolie pulmonaire"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "anatomo_metaplasie_001",
+          "prompt": "La ___ est une modification réversible d'un tissu différencié en un autre tissu différencié.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Lésions élémentaires terminées",
+          "body": "Tu connais maintenant les principales lésions élémentaires et leur signification physiopathologique.",
+          "masteredConcepts": ["pathology.anatomo.lesions.necrosis", "pathology.anatomo.lesions.metaplasia", "pathology.anatomo.lesions.dysplasia"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_lesions_id;
+
+  IF v_level_lesions_id IS NULL THEN
+    SELECT id INTO v_level_lesions_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'anatomo_lesions';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_lesions_id,
+    $json${
+      "anatomo_caseous_001": {
+        "correctIndex": 1,
+        "explanation": "La nécrose caséeuse, d'aspect blanchâtre semblable à du fromage, est le type de nécrose caractéristique de la tuberculose et des infections à mycobactéries. Elle résulte d'une réaction d'hypersensibilité retardée.",
+        "conceptKey": "pathology.anatomo.lesions.necrosis.caseous",
+        "sourceRefs": []
+      },
+      "anatomo_metaplasie_001": {
+        "acceptedAnswers": ["métaplasie"],
+        "explanation": "La métaplasie est un processus adaptatif réversible dans lequel un type cellulaire différencié est remplacé par un autre (ex. œsophage de Barrett : épithélium cylindrique intestinal remplace l'épithélium malpighien normal).",
+        "conceptKey": "pathology.anatomo.lesions.metaplasia",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Tumeurs bénignes et malignes ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'anatomo_tumors',
+    'Tumeurs bénignes et malignes',
+    3,
+    'hard',
+    150,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 7,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Tumeurs bénignes et malignes",
+          "subtitle": "Carcinome, sarcome, adénocarcinome",
+          "body": "Une tumeur bénigne est à croissance lente, encapsulée, sans invasion ni métastase. Une tumeur maligne (cancer) envahit les tissus adjacents, forme des métastases et présente des atypies nucléaires. La nomenclature dépend du tissu d'origine : le carcinome provient d'un épithélium, le sarcome provient du mésenchyme (tissu conjonctif, muscle, os), l'adénocarcinome provient d'un épithélium glandulaire. Les critères histologiques de malignité incluent : rapport nucléo-cytoplasmique élevé, hyperchromatisme nucléaire, mitoses atypiques, invasion de la membrane basale.",
+          "sourceRefs": [{"title": "Open educational pathology references", "type": "open_educational", "chapter": "Tumor pathology"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "anatomo_tumor_cc_001",
+          "scenario": "À l'examen histologique d'une biopsie rectale, on observe des cellules épithéliales avec des noyaux hyperchromatiques, un rapport nucléo-cytoplasmique élevé, des mitoses atypiques et une invasion de la lamina propria.",
+          "question": "Quel diagnostic histologique est le plus probable ?",
+          "options": ["Adénome tubuleux bénin", "Polype hyperplasique", "Adénocarcinome invasif", "Métaplasie intestinale"],
+          "difficulty": "hard",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "anatomo_carcinoma_001",
+          "question": "Tumeur maligne d'origine épithéliale ?",
+          "options": ["Carcinome", "Sarcome", "Lymphome", "Gliome"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Tumeurs terminées",
+          "body": "Tu connais maintenant les critères de bénignité et de malignité et la nomenclature tumorale de base.",
+          "masteredConcepts": ["pathology.anatomo.tumors.benign_vs_malignant", "pathology.anatomo.tumors.carcinoma", "pathology.anatomo.tumors.sarcoma"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_tumors_id;
+
+  IF v_level_tumors_id IS NULL THEN
+    SELECT id INTO v_level_tumors_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'anatomo_tumors';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_tumors_id,
+    $json${
+      "anatomo_tumor_cc_001": {
+        "correctIndex": 2,
+        "explanation": "La présence de cellules épithéliales avec hyperchromatisme nucléaire, rapport nucléo-cytoplasmique élevé, mitoses atypiques et invasion de la lamina propria sont des critères formels d'adénocarcinome invasif. L'adénome bénin ne présente pas d'invasion.",
+        "conceptKey": "pathology.anatomo.tumors.adenocarcinoma.rectal",
+        "sourceRefs": []
+      },
+      "anatomo_carcinoma_001": {
+        "correctIndex": 0,
+        "explanation": "Le carcinome est une tumeur maligne dérivée d'un épithélium (cutané, muqueux, glandulaire). Le sarcome dérive du mésenchyme. Le lymphome dérive des cellules lymphoïdes. Le gliome dérive des cellules gliales du SNC.",
+        "conceptKey": "pathology.anatomo.tumors.carcinoma",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Ticket 17: Sémiologie médicale — nouveau sujet
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, is_published)
+VALUES ('semiology', 'Sémiologie médicale', 'Medical Semiology', '🩺', '#2980b9', 'L''art d''interroger et d''examiner le patient.', 12, true)
+ON CONFLICT (id) DO UPDATE SET
+  name_fr = EXCLUDED.name_fr, name_en = EXCLUDED.name_en, icon = EXCLUDED.icon,
+  color = EXCLUDED.color, description_fr = EXCLUDED.description_fr,
+  order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('semiology', 'clinical_exam', 'L''examen clinique', 'Interrogatoire, inspection, palpation, percussion, auscultation.', '🩺', 1, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET title_fr=EXCLUDED.title_fr, description_fr=EXCLUDED.description_fr, icon=EXCLUDED.icon, order_index=EXCLUDED.order_index, is_published=EXCLUDED.is_published;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_interro_id uuid;
+  v_level_vitals_id uuid;
+  v_level_pain_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'semiology' AND slug = 'clinical_exam';
+
+  IF v_chapter_id IS NULL THEN
+    RAISE EXCEPTION 'Chapter semiology/clinical_exam not found';
+  END IF;
+
+  -- ---- Niveau 1: Interrogatoire ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'semio_interrogatoire',
+    'L''interrogatoire (anamnèse)',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "L'interrogatoire (anamnèse)",
+          "subtitle": "Premier temps de l'examen clinique",
+          "body": "L'anamnèse (interrogatoire) est la première étape de l'examen clinique. Elle recueille : le motif de consultation (plainte principale), l'histoire de la maladie (début, caractère, irradiation, intensité, horaire, facteurs aggravants/soulageants), les antécédents médicaux et chirurgicaux, les traitements en cours, les allergies, les antécédents familiaux et l'histoire sociale (mode de vie, profession, voyages). L'auscultation consiste à écouter les sons produits par les organes internes (cœur, poumons, abdomen) à l'aide d'un stéthoscope.",
+          "sourceRefs": [{"title": "Open educational clinical examination references", "type": "open_educational", "chapter": "Anamnesis"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "semio_interro_001",
+          "question": "Première étape de l'examen clinique ?",
+          "options": ["L'auscultation", "La palpation", "L'interrogatoire (anamnèse)", "La percussion"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "semio_auscult_001",
+          "prompt": "L'___ est la technique qui consiste à écouter les sons produits par les organes internes.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Interrogatoire terminé",
+          "body": "Tu connais maintenant les éléments constitutifs de l'anamnèse et les techniques d'examen clinique.",
+          "masteredConcepts": ["semiology.clinical_exam.anamnesis", "semiology.clinical_exam.auscultation"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_interro_id;
+
+  IF v_level_interro_id IS NULL THEN
+    SELECT id INTO v_level_interro_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'semio_interrogatoire';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_interro_id,
+    $json${
+      "semio_interro_001": {
+        "correctIndex": 2,
+        "explanation": "L'interrogatoire (anamnèse) est toujours la première étape de l'examen clinique. Il permet de recueillir la plainte principale, l'histoire de la maladie et les antécédents avant tout examen physique.",
+        "conceptKey": "semiology.clinical_exam.anamnesis",
+        "sourceRefs": []
+      },
+      "semio_auscult_001": {
+        "acceptedAnswers": ["auscultation"],
+        "explanation": "L'auscultation est la technique qui utilise un stéthoscope pour écouter les bruits cardiaques, les murmures vésiculaires pulmonaires et les bruits intestinaux.",
+        "conceptKey": "semiology.clinical_exam.auscultation",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Constantes vitales ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'semio_vital_signs',
+    'Constantes vitales',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Constantes vitales",
+          "subtitle": "Pression artérielle, fréquence cardiaque, saturation",
+          "body": "Les constantes vitales à mesurer systématiquement : pression artérielle (PA) normale < 120/80 mmHg, hypertension si ≥ 140/90 mmHg ; fréquence cardiaque (FC) normale 60-100 bpm, tachycardie si > 100 bpm, bradycardie si < 60 bpm ; fréquence respiratoire (FR) normale 12-20/min ; saturation en oxygène (SpO2) normale > 95% ; température normale 36,5-37,5°C.",
+          "sourceRefs": [{"title": "Open educational clinical examination references", "type": "open_educational", "chapter": "Vital signs"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "semio_bp_001",
+          "question": "Valeurs normales de la pression artérielle ?",
+          "options": ["Inférieure à 120/80 mmHg", "Inférieure à 140/90 mmHg", "Entre 120/80 et 140/90 mmHg", "Inférieure à 100/60 mmHg"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "semio_tachy_001",
+          "prompt": "Une fréquence cardiaque supérieure à ___ battements/min est définie comme une tachycardie.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Constantes vitales terminées",
+          "body": "Tu connais maintenant les valeurs normales et pathologiques des constantes vitales.",
+          "masteredConcepts": ["semiology.vital_signs.blood_pressure", "semiology.vital_signs.heart_rate", "semiology.vital_signs.tachycardia"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_vitals_id;
+
+  IF v_level_vitals_id IS NULL THEN
+    SELECT id INTO v_level_vitals_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'semio_vital_signs';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_vitals_id,
+    $json${
+      "semio_bp_001": {
+        "correctIndex": 0,
+        "explanation": "La PA normale est inférieure à 120/80 mmHg (systolique/diastolique). On parle d'hypertension artérielle à partir de 140/90 mmHg. Entre les deux, on parle d'hypertension de stade 1 ou de préhypertension selon les classifications.",
+        "conceptKey": "semiology.vital_signs.blood_pressure.normal",
+        "sourceRefs": []
+      },
+      "semio_tachy_001": {
+        "acceptedAnswers": ["100"],
+        "explanation": "La tachycardie est définie par une fréquence cardiaque supérieure à 100 battements par minute au repos. La bradycardie correspond à une FC inférieure à 60 bpm.",
+        "conceptKey": "semiology.vital_signs.tachycardia",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Évaluation de la douleur ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'semio_pain',
+    'Évaluation de la douleur',
+    3,
+    'medium',
+    130,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Évaluation de la douleur",
+          "subtitle": "EVA/NRS et mnémotechnique SOCRATES",
+          "body": "L'évaluation de la douleur repose sur l'échelle numérique (NRS) ou visuelle analogique (EVA) de 0 à 10. La mnémotechnique SOCRATES guide l'interrogatoire : Site (localisation), Onset (début), Character (caractère), Radiation (irradiation), Associations (symptômes associés), Time (évolution temporelle), Exacerbating/Relieving factors (facteurs aggravants/soulageants), Severity (intensité sur EVA).",
+          "sourceRefs": [{"title": "Open educational clinical examination references", "type": "open_educational", "chapter": "Pain assessment"}]
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "semio_pain_cc_001",
+          "scenario": "Un patient de 55 ans se présente aux urgences avec une douleur thoracique constrictive irradiant dans le bras gauche et la mâchoire, débutée il y a 45 minutes au repos, avec sueurs et nausées. EVA 8/10.",
+          "question": "Quelle est la localisation anatomique la plus probable de cette douleur ?",
+          "options": ["Plèvre gauche", "Myocarde (ventricule gauche)", "Œsophage", "Péricarde"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "semio_eva_001",
+          "question": "Échelle de douleur numérique standard ?",
+          "options": ["Échelle de Glasgow (0 à 15)", "EVA/NRS de 0 à 10", "Score APACHE II", "Indice de Barthel"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Évaluation de la douleur terminée",
+          "body": "Tu connais maintenant les outils d'évaluation de la douleur et la mnémotechnique SOCRATES.",
+          "masteredConcepts": ["semiology.pain.eva_nrs", "semiology.pain.socrates", "semiology.pain.chest_pain"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_pain_id;
+
+  IF v_level_pain_id IS NULL THEN
+    SELECT id INTO v_level_pain_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'semio_pain';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_pain_id,
+    $json${
+      "semio_pain_cc_001": {
+        "correctIndex": 1,
+        "explanation": "La douleur constrictive irradiant dans le bras gauche et la mâchoire, au repos, avec sueurs et nausées, est le tableau classique d'un syndrome coronarien aigu (infarctus du myocarde). L'origine est le ventricule gauche dont la paroi est ischémique.",
+        "conceptKey": "semiology.pain.chest_pain.acs",
+        "sourceRefs": []
+      },
+      "semio_eva_001": {
+        "correctIndex": 1,
+        "explanation": "L'EVA (Échelle Visuelle Analogique) et le NRS (Numerical Rating Scale) cotent la douleur de 0 (absence) à 10 (douleur maximale imaginable). Ce sont les outils de référence pour évaluer l'intensité douloureuse.",
+        "conceptKey": "semiology.pain.eva_nrs",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
