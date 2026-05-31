@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { LessonContentPublicSchema } from "./lesson-schema";
+import { LessonContentPublicSchema, ImageLabelStepSchema } from "./lesson-schema";
 
 const validLesson = {
   schemaVersion: 1 as const,
@@ -40,5 +40,35 @@ describe("LessonContentPublicSchema", () => {
 
   it("rejects wrong schema version", () => {
     expect(() => LessonContentPublicSchema.parse({ ...validLesson, schemaVersion: 2 })).toThrow();
+  });
+
+  it("accepts lesson with image_label step", () => {
+    const lesson = {
+      ...validLesson,
+      steps: [
+        {
+          type: "image_label" as const,
+          title: "Le cœur",
+          imageAlt: "Schéma du cœur",
+          labels: [
+            { id: "l1", text: "Oreillette gauche", position: { x: 30, y: 40 } },
+            { id: "l2", text: "Ventricule droit", position: { x: 70, y: 60 } },
+          ],
+          sourceRefs: [],
+        },
+        { type: "complete" as const, title: "Terminé", body: "Bravo", masteredConcepts: [] },
+      ],
+    };
+    expect(() => LessonContentPublicSchema.parse(lesson)).not.toThrow();
+  });
+
+  it("rejects image_label step with no labels", () => {
+    expect(() => ImageLabelStepSchema.parse({
+      type: "image_label",
+      title: "Test",
+      imageAlt: "test",
+      labels: [],
+      sourceRefs: [],
+    })).toThrow();
   });
 });

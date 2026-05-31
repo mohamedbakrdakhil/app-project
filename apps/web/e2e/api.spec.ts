@@ -58,4 +58,16 @@ test.describe("API routes (unauthenticated)", () => {
     const res = await request.get("/api/notifications");
     expect(res.status()).toBe(401);
   });
+
+  test("search returns 401 without auth", async ({ request }) => {
+    const res = await request.get("/api/search?q=fémur");
+    expect(res.status()).toBe(401);
+  });
+
+  test("notifications/read returns 401 without auth", async ({ request }) => {
+    const res = await request.post("/api/notifications/read", {
+      data: { notificationIds: ["00000000-0000-0000-0000-000000000000"] },
+    });
+    expect(res.status()).toBe(401);
+  });
 });

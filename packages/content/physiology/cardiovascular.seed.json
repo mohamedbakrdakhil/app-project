@@ -1,0 +1,210 @@
+{
+  "subject": {
+    "id": "physiology",
+    "nameFr": "Physiologie",
+    "icon": "🫀",
+    "color": "#00d4ff",
+    "descriptionFr": "Comprends le fonctionnement des organes et des systèmes du corps humain.",
+    "slug": "physiology"
+  },
+  "chapters": [
+    {
+      "slug": "cardiovascular",
+      "titleFr": "Système cardiovasculaire",
+      "icon": "❤️",
+      "orderIndex": 1
+    }
+  ],
+  "levels": [
+    {
+      "slug": "heart_structure",
+      "titleFr": "Le cœur — structure générale",
+      "orderIndex": 1,
+      "difficulty": "easy",
+      "xpReward": 100,
+      "contentPublic": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "Le cœur — structure générale",
+            "subtitle": "Muscle creux et pompe centrale",
+            "body": "Le cœur est un muscle creux situé dans le médiastin, entre les deux poumons. Il est composé de 4 cavités : 2 oreillettes (en haut) et 2 ventricules (en bas). Il pompe le sang en deux circuits : le circuit pulmonaire et le circuit systémique.",
+            "fact": "Le cœur bat environ 100 000 fois par jour et pompe près de 8 000 litres de sang.",
+            "visual": {"type": "placeholder", "alt": "cœur"},
+            "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+          },
+          {
+            "type": "image_label",
+            "title": "Les 4 cavités du cœur",
+            "imageAlt": "Schéma simplifié des cavités cardiaques",
+            "labels": [
+              {"id": "og", "text": "Oreillette gauche", "position": {"x": 30, "y": 35}},
+              {"id": "od", "text": "Oreillette droite", "position": {"x": 70, "y": 35}},
+              {"id": "vg", "text": "Ventricule gauche", "position": {"x": 30, "y": 65}},
+              {"id": "vd", "text": "Ventricule droit", "position": {"x": 70, "y": 65}}
+            ],
+            "caption": "Schéma éducatif simplifié — contenu original",
+            "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+          },
+          {
+            "type": "recall",
+            "questionKey": "heart_cavities_001",
+            "question": "Combien de cavités possède le cœur ?",
+            "options": ["4 — 2 oreillettes et 2 ventricules", "2 — 1 oreillette et 1 ventricule", "3 — 2 oreillettes et 1 ventricule", "6 — 3 de chaque côté"],
+            "timerSeconds": 45,
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "heart_location_001",
+            "prompt": "Le cœur est situé dans le ___.",
+            "timerSeconds": 45,
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Structure du cœur maîtrisée",
+            "body": "Tu connais maintenant la structure générale et la localisation du cœur.",
+            "masteredConcepts": ["physiology.cardiovascular.heart.structure", "physiology.cardiovascular.heart.location"]
+          }
+        ]
+      },
+      "answerKey": {
+        "heart_cavities_001": {
+          "correctIndex": 0,
+          "explanation": "Le cœur possède 4 cavités : 2 oreillettes (droite et gauche) en haut, et 2 ventricules (droit et gauche) en bas.",
+          "conceptKey": "physiology.cardiovascular.heart.structure",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        "heart_location_001": {
+          "acceptedAnswers": ["médiastin", "mediastin"],
+          "explanation": "Le cœur est situé dans le médiastin, la région centrale du thorax entre les deux poumons.",
+          "conceptKey": "physiology.cardiovascular.heart.location",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        }
+      }
+    },
+    {
+      "slug": "blood_circulation",
+      "titleFr": "La circulation sanguine",
+      "orderIndex": 2,
+      "difficulty": "easy",
+      "xpReward": 100,
+      "contentPublic": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "La circulation sanguine",
+            "subtitle": "Deux circuits complémentaires",
+            "body": "Le cœur alimente deux circuits : le circuit pulmonaire (cœur droit → poumons → cœur gauche) pour l'oxygénation du sang, et le circuit systémique (cœur gauche → corps → cœur droit) pour la distribution aux organes. Les artères transportent le sang oxygéné (sauf les artères pulmonaires) et les veines ramènent le sang désoxygéné (sauf les veines pulmonaires).",
+            "fact": "Le sang effectue un tour complet du circuit en environ 1 minute au repos.",
+            "visual": {"type": "placeholder", "alt": "circulation sanguine"},
+            "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+          },
+          {
+            "type": "recall",
+            "questionKey": "circulation_pulmonaire_001",
+            "question": "Que transporte principalement le circuit pulmonaire ?",
+            "options": ["Le sang du cœur droit vers les poumons pour oxygénation", "Le sang du cœur gauche vers le corps", "Le sang oxygéné vers les organes", "Le sang des membres vers le foie"],
+            "timerSeconds": 45,
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "circulation_coeur_001",
+            "prompt": "Le sang part du cœur ___ vers les poumons dans la circulation pulmonaire.",
+            "timerSeconds": 45,
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Circulation sanguine maîtrisée",
+            "body": "Tu comprends maintenant les deux grands circuits de la circulation sanguine.",
+            "masteredConcepts": ["physiology.cardiovascular.circulation.pulmonary", "physiology.cardiovascular.circulation.systemic"]
+          }
+        ]
+      },
+      "answerKey": {
+        "circulation_pulmonaire_001": {
+          "correctIndex": 0,
+          "explanation": "Le circuit pulmonaire achemine le sang désoxygéné du cœur droit vers les poumons, où il se charge en oxygène avant de revenir au cœur gauche.",
+          "conceptKey": "physiology.cardiovascular.circulation.pulmonary",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        "circulation_coeur_001": {
+          "acceptedAnswers": ["droit", "côté droit"],
+          "explanation": "Dans la circulation pulmonaire, le sang part du cœur droit (ventricule droit) pour aller se charger en oxygène dans les poumons.",
+          "conceptKey": "physiology.cardiovascular.circulation.systemic",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        }
+      }
+    },
+    {
+      "slug": "blood_pressure",
+      "titleFr": "La pression artérielle",
+      "orderIndex": 3,
+      "difficulty": "easy",
+      "xpReward": 100,
+      "contentPublic": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "La pression artérielle",
+            "subtitle": "Systolique et diastolique",
+            "body": "La pression artérielle est la force exercée par le sang sur les parois des artères. Elle se mesure en deux valeurs : la pression systolique (lors de la contraction du ventricule) et la pression diastolique (lors du relâchement). Les valeurs normales sont environ 120/80 mmHg.",
+            "fact": "L'hypertension artérielle (>140/90 mmHg) est l'un des principaux facteurs de risque cardiovasculaire.",
+            "visual": {"type": "placeholder", "alt": "pression artérielle"},
+            "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+          },
+          {
+            "type": "recall",
+            "questionKey": "blood_pressure_systolic_001",
+            "question": "Que mesure la pression systolique ?",
+            "options": ["La pression lors de la contraction ventriculaire", "La pression lors du repos du cœur", "La fréquence des battements", "Le volume sanguin total"],
+            "timerSeconds": 45,
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "blood_pressure_normal_001",
+            "prompt": "La valeur normale de pression artérielle est approximativement ___ mmHg.",
+            "timerSeconds": 45,
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Pression artérielle maîtrisée",
+            "body": "Tu sais maintenant ce qu'est la pression artérielle et ses valeurs normales.",
+            "masteredConcepts": ["physiology.cardiovascular.blood_pressure.definition", "physiology.cardiovascular.blood_pressure.normal_values"]
+          }
+        ]
+      },
+      "answerKey": {
+        "blood_pressure_systolic_001": {
+          "correctIndex": 0,
+          "explanation": "La pression systolique correspond à la pression maximale lors de la contraction (systole) du ventricule gauche.",
+          "conceptKey": "physiology.cardiovascular.blood_pressure.definition",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        "blood_pressure_normal_001": {
+          "acceptedAnswers": ["120/80", "12/8"],
+          "explanation": "Les valeurs normales de pression artérielle sont 120 mmHg (systolique) sur 80 mmHg (diastolique), soit 120/80 mmHg.",
+          "conceptKey": "physiology.cardiovascular.blood_pressure.normal_values",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        }
+      }
+    }
+  ]
+}

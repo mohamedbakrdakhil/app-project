@@ -51,11 +51,25 @@ export const FillBlankStepSchema = z.object({
   xpReward: z.number().int().nonnegative().default(10),
 });
 
+export const ImageLabelStepSchema = z.object({
+  type: z.literal("image_label"),
+  title: z.string().min(1),
+  imageAlt: z.string().min(1),
+  labels: z.array(z.object({
+    id: z.string().min(1),
+    text: z.string().min(1),
+    position: z.object({ x: z.number().min(0).max(100), y: z.number().min(0).max(100) }),
+  })).min(1).max(10),
+  caption: z.string().optional(),
+  sourceRefs: z.array(SourceRefSchema).default([]),
+});
+
 export const LessonStepSchema = z.discriminatedUnion("type", [
   IntroStepSchema,
   RecallStepSchema,
   FillBlankStepSchema,
   CompleteStepSchema,
+  ImageLabelStepSchema,
 ]);
 
 export const LessonContentPublicSchema = z.object({
@@ -97,3 +111,4 @@ export type FillBlankStep = z.infer<typeof FillBlankStepSchema>;
 export type CompleteStep = z.infer<typeof CompleteStepSchema>;
 export type AnswerEntry = z.infer<typeof AnswerEntrySchema>;
 export type FillBlankAnswerEntry = z.infer<typeof FillBlankAnswerEntrySchema>;
+export type ImageLabelStep = z.infer<typeof ImageLabelStepSchema>;

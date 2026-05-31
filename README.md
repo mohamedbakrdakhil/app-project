@@ -110,6 +110,13 @@ masteri/
 - ✅ Visualisation SVG des os
 - ✅ Analytics d'erreurs personnelles
 - ✅ PWA manifest
+- ✅ Physiologie (Système cardiovasculaire — 3 niveaux)
+- ✅ Histologie (Tissus fondamentaux — 3 niveaux)
+- ✅ Pharmacologie (stub, pas de chapitres)
+- ✅ Nouveau type de step `image_label` (zones annotées, lecture seule)
+- ✅ Recherche globale (matières + niveaux) via `/api/search`
+- ✅ SearchBar dans le header principal
+- Total : 15 niveaux publiés (9 anatomie + 3 physiologie + 3 histologie), 4 matières visibles
 
 ## Sécurité
 

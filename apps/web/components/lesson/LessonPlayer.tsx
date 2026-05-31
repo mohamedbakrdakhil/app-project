@@ -6,6 +6,7 @@ import IntroStepView from "./IntroStep";
 import RecallStepView from "./RecallStep";
 import FillBlankStepView from "./FillBlankStep";
 import CompleteStepView from "./CompleteStep";
+import ImageLabelStepView from "./ImageLabelStep";
 
 interface LessonPlayerProps {
   levelId: string;
@@ -220,6 +221,7 @@ export default function LessonPlayer({ levelId }: LessonPlayerProps) {
         />
       )}
       {step.type === "complete" && <CompleteStepView step={step} onNext={handleNext} />}
+      {step.type === "image_label" && <ImageLabelStepView step={step} onNext={handleNext} />}
     </div>
   );
 }

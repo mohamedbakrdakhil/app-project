@@ -1,0 +1,197 @@
+{
+  "subject": {
+    "id": "histology",
+    "nameFr": "Histologie",
+    "icon": "🔬",
+    "color": "#aa77ff",
+    "descriptionFr": "Explore la structure microscopique des tissus biologiques.",
+    "slug": "histology"
+  },
+  "chapters": [
+    {
+      "slug": "fundamental_tissues",
+      "titleFr": "Tissus fondamentaux",
+      "icon": "🔬",
+      "orderIndex": 1
+    }
+  ],
+  "levels": [
+    {
+      "slug": "epithelial_tissue",
+      "titleFr": "Le tissu épithélial",
+      "orderIndex": 1,
+      "difficulty": "easy",
+      "xpReward": 100,
+      "contentPublic": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "Le tissu épithélial",
+            "subtitle": "Revêtement et protection",
+            "body": "Le tissu épithélial recouvre les surfaces internes et externes du corps. Ses fonctions principales sont la protection, l'absorption et la sécrétion. On distingue l'épithélium simple (une seule couche de cellules) de l'épithélium stratifié (plusieurs couches).",
+            "fact": "L'épiderme, la couche superficielle de la peau, est un épithélium stratifié squameux pouvant compter jusqu'à 30 couches de cellules.",
+            "visual": {"type": "placeholder", "alt": "tissu épithélial"},
+            "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+          },
+          {
+            "type": "recall",
+            "questionKey": "epithelial_function_001",
+            "question": "Quelle est la fonction principale du tissu épithélial de revêtement ?",
+            "options": ["Recouvrir et protéger les surfaces du corps", "Transmettre les influx nerveux", "Contracter les organes", "Stocker les graisses"],
+            "timerSeconds": 45,
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "epithelial_simple_001",
+            "prompt": "Un épithélium ___ est composé d'une seule couche de cellules.",
+            "timerSeconds": 45,
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Tissu épithélial maîtrisé",
+            "body": "Tu connais maintenant la définition et la classification du tissu épithélial.",
+            "masteredConcepts": ["histology.epithelial.definition", "histology.epithelial.simple_vs_stratified"]
+          }
+        ]
+      },
+      "answerKey": {
+        "epithelial_function_001": {
+          "correctIndex": 0,
+          "explanation": "Le tissu épithélial de revêtement forme une barrière protectrice à la surface des organes et des cavités du corps.",
+          "conceptKey": "histology.epithelial.definition",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        "epithelial_simple_001": {
+          "acceptedAnswers": ["simple", "unistratifié"],
+          "explanation": "Un épithélium simple ne contient qu'une seule couche de cellules, toutes en contact avec la membrane basale.",
+          "conceptKey": "histology.epithelial.simple_vs_stratified",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        }
+      }
+    },
+    {
+      "slug": "connective_tissue",
+      "titleFr": "Le tissu conjonctif",
+      "orderIndex": 2,
+      "difficulty": "easy",
+      "xpReward": 100,
+      "contentPublic": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "Le tissu conjonctif",
+            "subtitle": "Soutien et liaison",
+            "body": "Le tissu conjonctif assure le soutien et la liaison entre les autres tissus. Il est composé de cellules (fibroblastes, adipocytes, macrophages) et d'une matrice extracellulaire riche en fibres de collagène et fibres élastiques. Il existe de nombreuses formes : lâche, dense, graisseux, osseux, cartilagineux et sanguin.",
+            "fact": "Le collagène est la protéine la plus abondante du corps humain, représentant environ 25 à 35 % des protéines totales.",
+            "visual": {"type": "placeholder", "alt": "tissu conjonctif"},
+            "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+          },
+          {
+            "type": "recall",
+            "questionKey": "connective_collagen_001",
+            "question": "Quel est le composant principal de la matrice extracellulaire du tissu conjonctif dense ?",
+            "options": ["Les fibres de collagène", "Les fibres musculaires", "Les axones nerveux", "Les villosités intestinales"],
+            "timerSeconds": 45,
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "connective_fibroblasts_001",
+            "prompt": "Les ___ sont les cellules productrices de fibres dans le tissu conjonctif.",
+            "timerSeconds": 45,
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Tissu conjonctif maîtrisé",
+            "body": "Tu connais maintenant la composition et les rôles du tissu conjonctif.",
+            "masteredConcepts": ["histology.connective.definition", "histology.connective.components"]
+          }
+        ]
+      },
+      "answerKey": {
+        "connective_collagen_001": {
+          "correctIndex": 0,
+          "explanation": "Dans le tissu conjonctif dense, les fibres de collagène (type I) constituent la majorité de la matrice extracellulaire, lui conférant résistance et solidité.",
+          "conceptKey": "histology.connective.definition",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        "connective_fibroblasts_001": {
+          "acceptedAnswers": ["fibroblastes", "fibroblaste"],
+          "explanation": "Les fibroblastes sont les cellules principales du tissu conjonctif. Ils synthétisent le collagène, l'élastine et d'autres composants de la matrice extracellulaire.",
+          "conceptKey": "histology.connective.components",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        }
+      }
+    },
+    {
+      "slug": "muscle_nerve_tissue",
+      "titleFr": "Tissus musculaire et nerveux",
+      "orderIndex": 3,
+      "difficulty": "easy",
+      "xpReward": 100,
+      "contentPublic": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "Tissus musculaire et nerveux",
+            "subtitle": "Les 4 tissus fondamentaux",
+            "body": "Le tissu musculaire se décline en trois types : strié squelettique (volontaire), strié cardiaque (involontaire) et lisse (involontaire). Le tissu nerveux est composé de neurones (cellules conductrices) et de cellules gliales (soutien). Ces quatre types — épithélial, conjonctif, musculaire, nerveux — forment la base de tous les organes.",
+            "fact": "Le cerveau humain contient environ 86 milliards de neurones, chacun pouvant établir des milliers de connexions.",
+            "visual": {"type": "placeholder", "alt": "tissus musculaire et nerveux"},
+            "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+          },
+          {
+            "type": "recall",
+            "questionKey": "tissue_types_count_001",
+            "question": "Combien y a-t-il de types de tissus fondamentaux dans le corps humain ?",
+            "options": ["4 — épithélial, conjonctif, musculaire, nerveux", "3 — épithélial, musculaire, nerveux", "5 — épithélial, conjonctif, musculaire, nerveux, osseux", "2 — mou et dur"],
+            "timerSeconds": 45,
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "cardiac_muscle_001",
+            "prompt": "Le tissu musculaire cardiaque est ___ et involontaire.",
+            "timerSeconds": 45,
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "4 tissus fondamentaux maîtrisés",
+            "body": "Tu connais maintenant les quatre grands types de tissus fondamentaux du corps humain.",
+            "masteredConcepts": ["histology.muscle_tissue.types", "histology.nerve_tissue.definition"]
+          }
+        ]
+      },
+      "answerKey": {
+        "tissue_types_count_001": {
+          "correctIndex": 0,
+          "explanation": "Il existe 4 types de tissus fondamentaux : épithélial (revêtement), conjonctif (soutien), musculaire (contraction) et nerveux (conduction).",
+          "conceptKey": "histology.muscle_tissue.types",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        "cardiac_muscle_001": {
+          "acceptedAnswers": ["strié", "strié cardiaque"],
+          "explanation": "Le muscle cardiaque est qualifié de strié car ses cellules présentent des stries transversales visibles en microscopie, comme le muscle squelettique.",
+          "conceptKey": "histology.nerve_tissue.definition",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        }
+      }
+    }
+  ]
+}

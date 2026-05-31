@@ -818,3 +818,600 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Ticket 09: Physiologie, Histologie, Pharmacologie subjects
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, is_published)
+VALUES (
+  'physiology',
+  'Physiologie',
+  'Physiology',
+  '🫀',
+  '#00d4ff',
+  'Comprends le fonctionnement des organes et des systèmes du corps humain.',
+  2,
+  true
+)
+ON CONFLICT (id) DO UPDATE SET
+  name_fr = EXCLUDED.name_fr, name_en = EXCLUDED.name_en, icon = EXCLUDED.icon,
+  color = EXCLUDED.color, description_fr = EXCLUDED.description_fr,
+  order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, is_published)
+VALUES (
+  'histology',
+  'Histologie',
+  'Histology',
+  '🔬',
+  '#aa77ff',
+  'Explore la structure microscopique des tissus biologiques.',
+  3,
+  true
+)
+ON CONFLICT (id) DO UPDATE SET
+  name_fr = EXCLUDED.name_fr, name_en = EXCLUDED.name_en, icon = EXCLUDED.icon,
+  color = EXCLUDED.color, description_fr = EXCLUDED.description_fr,
+  order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, is_published)
+VALUES (
+  'pharmacology',
+  'Pharmacologie',
+  'Pharmacology',
+  '💊',
+  '#ffb347',
+  'Les médicaments, leurs mécanismes d''action et leurs effets.',
+  4,
+  true
+)
+ON CONFLICT (id) DO UPDATE SET
+  name_fr = EXCLUDED.name_fr, name_en = EXCLUDED.name_en, icon = EXCLUDED.icon,
+  color = EXCLUDED.color, description_fr = EXCLUDED.description_fr,
+  order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+-- Physiologie — Chapitre cardiovascular
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('physiology', 'cardiovascular', 'Système cardiovasculaire', 'Le coeur, les vaisseaux et la circulation sanguine.', '❤️', 1, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET title_fr = EXCLUDED.title_fr, description_fr = EXCLUDED.description_fr, icon = EXCLUDED.icon, order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+-- Histologie — Chapitre fundamental_tissues
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, is_published)
+VALUES ('histology', 'fundamental_tissues', 'Tissus fondamentaux', 'Les quatre grands types de tissus du corps humain.', '🔬', 1, true)
+ON CONFLICT (subject_id, slug) DO UPDATE SET title_fr = EXCLUDED.title_fr, description_fr = EXCLUDED.description_fr, icon = EXCLUDED.icon, order_index = EXCLUDED.order_index, is_published = EXCLUDED.is_published;
+
+-- ============================================================
+-- Physiologie — Systeme cardiovasculaire — 3 niveaux
+-- ============================================================
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_heart_id uuid;
+  v_level_circulation_id uuid;
+  v_level_pressure_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'physiology' AND slug = 'cardiovascular';
+
+  IF v_chapter_id IS NULL THEN
+    RAISE EXCEPTION 'Chapter physiology/cardiovascular not found';
+  END IF;
+
+  -- ---- Le coeur — structure generale ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'heart_structure',
+    'Le coeur — structure generale',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu educatif. Ne remplace pas un avis medical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le coeur — structure generale",
+          "subtitle": "Muscle creux et pompe centrale",
+          "body": "Le coeur est un muscle creux situe dans le mediastin, entre les deux poumons. Il est compose de 4 cavites : 2 oreillettes (en haut) et 2 ventricules (en bas). Il pompe le sang en deux circuits : le circuit pulmonaire et le circuit systemique.",
+          "fact": "Le coeur bat environ 100 000 fois par jour et pompe pres de 8 000 litres de sang.",
+          "visual": {"type": "placeholder", "alt": "coeur"},
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        {
+          "type": "image_label",
+          "title": "Les 4 cavites du coeur",
+          "imageAlt": "Schema simplifie des cavites cardiaques",
+          "labels": [
+            {"id": "og", "text": "Oreillette gauche", "position": {"x": 30, "y": 35}},
+            {"id": "od", "text": "Oreillette droite", "position": {"x": 70, "y": 35}},
+            {"id": "vg", "text": "Ventricule gauche", "position": {"x": 30, "y": 65}},
+            {"id": "vd", "text": "Ventricule droit", "position": {"x": 70, "y": 65}}
+          ],
+          "caption": "Schema educatif simplifie — contenu original",
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "heart_cavities_001",
+          "question": "Combien de cavites possede le coeur ?",
+          "options": ["4 — 2 oreillettes et 2 ventricules", "2 — 1 oreillette et 1 ventricule", "3 — 2 oreillettes et 1 ventricule", "6 — 3 de chaque cote"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "heart_location_001",
+          "prompt": "Le coeur est situe dans le ___.",
+          "timerSeconds": 45,
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Structure du coeur maitrisee",
+          "body": "Tu connais maintenant la structure generale et la localisation du coeur.",
+          "masteredConcepts": ["physiology.cardiovascular.heart.structure", "physiology.cardiovascular.heart.location"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_heart_id;
+
+  IF v_level_heart_id IS NULL THEN
+    SELECT id INTO v_level_heart_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'heart_structure';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_heart_id,
+    $json${
+      "heart_cavities_001": {
+        "correctIndex": 0,
+        "explanation": "Le coeur possede 4 cavites : 2 oreillettes (droite et gauche) en haut, et 2 ventricules (droit et gauche) en bas.",
+        "conceptKey": "physiology.cardiovascular.heart.structure",
+        "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+      },
+      "heart_location_001": {
+        "acceptedAnswers": ["mediastin"],
+        "explanation": "Le coeur est situe dans le mediastin, la region centrale du thorax entre les deux poumons.",
+        "conceptKey": "physiology.cardiovascular.heart.location",
+        "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- La circulation sanguine ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'blood_circulation',
+    'La circulation sanguine',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu educatif. Ne remplace pas un avis medical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "La circulation sanguine",
+          "subtitle": "Deux circuits complementaires",
+          "body": "Le coeur alimente deux circuits : le circuit pulmonaire (coeur droit vers poumons puis coeur gauche) pour l'oxygenation du sang, et le circuit systemique (coeur gauche vers corps puis coeur droit) pour la distribution aux organes. Les arteres transportent le sang oxygene (sauf les arteres pulmonaires) et les veines ramenent le sang desoxygene (sauf les veines pulmonaires).",
+          "fact": "Le sang effectue un tour complet du circuit en environ 1 minute au repos.",
+          "visual": {"type": "placeholder", "alt": "circulation sanguine"},
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "circulation_pulmonaire_001",
+          "question": "Que transporte principalement le circuit pulmonaire ?",
+          "options": ["Le sang du coeur droit vers les poumons pour oxygenation", "Le sang du coeur gauche vers le corps", "Le sang oxygene vers les organes", "Le sang des membres vers le foie"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "circulation_coeur_001",
+          "prompt": "Le sang part du coeur ___ vers les poumons dans la circulation pulmonaire.",
+          "timerSeconds": 45,
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Circulation sanguine maitrisee",
+          "body": "Tu comprends maintenant les deux grands circuits de la circulation sanguine.",
+          "masteredConcepts": ["physiology.cardiovascular.circulation.pulmonary", "physiology.cardiovascular.circulation.systemic"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_circulation_id;
+
+  IF v_level_circulation_id IS NULL THEN
+    SELECT id INTO v_level_circulation_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'blood_circulation';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_circulation_id,
+    $json${
+      "circulation_pulmonaire_001": {
+        "correctIndex": 0,
+        "explanation": "Le circuit pulmonaire achemine le sang desoxygene du coeur droit vers les poumons, ou il se charge en oxygene avant de revenir au coeur gauche.",
+        "conceptKey": "physiology.cardiovascular.circulation.pulmonary",
+        "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+      },
+      "circulation_coeur_001": {
+        "acceptedAnswers": ["droit", "cote droit"],
+        "explanation": "Dans la circulation pulmonaire, le sang part du coeur droit (ventricule droit) pour aller se charger en oxygene dans les poumons.",
+        "conceptKey": "physiology.cardiovascular.circulation.systemic",
+        "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- La pression arterielle ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'blood_pressure',
+    'La pression arterielle',
+    3,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu educatif. Ne remplace pas un avis medical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "La pression arterielle",
+          "subtitle": "Systolique et diastolique",
+          "body": "La pression arterielle est la force exercee par le sang sur les parois des arteres. Elle se mesure en deux valeurs : la pression systolique (lors de la contraction du ventricule) et la pression diastolique (lors du relachement). Les valeurs normales sont environ 120/80 mmHg.",
+          "fact": "L'hypertension arterielle (superieure a 140/90 mmHg) est l'un des principaux facteurs de risque cardiovasculaire.",
+          "visual": {"type": "placeholder", "alt": "pression arterielle"},
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "blood_pressure_systolic_001",
+          "question": "Que mesure la pression systolique ?",
+          "options": ["La pression lors de la contraction ventriculaire", "La pression lors du repos du coeur", "La frequence des battements", "Le volume sanguin total"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "blood_pressure_normal_001",
+          "prompt": "La valeur normale de pression arterielle est approximativement ___ mmHg.",
+          "timerSeconds": 45,
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Pression arterielle maitrisee",
+          "body": "Tu sais maintenant ce qu'est la pression arterielle et ses valeurs normales.",
+          "masteredConcepts": ["physiology.cardiovascular.blood_pressure.definition", "physiology.cardiovascular.blood_pressure.normal_values"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_pressure_id;
+
+  IF v_level_pressure_id IS NULL THEN
+    SELECT id INTO v_level_pressure_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'blood_pressure';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_pressure_id,
+    $json${
+      "blood_pressure_systolic_001": {
+        "correctIndex": 0,
+        "explanation": "La pression systolique correspond a la pression maximale lors de la contraction (systole) du ventricule gauche.",
+        "conceptKey": "physiology.cardiovascular.blood_pressure.definition",
+        "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+      },
+      "blood_pressure_normal_001": {
+        "acceptedAnswers": ["120/80", "12/8"],
+        "explanation": "Les valeurs normales de pression arterielle sont 120 mmHg (systolique) sur 80 mmHg (diastolique), soit 120/80 mmHg.",
+        "conceptKey": "physiology.cardiovascular.blood_pressure.normal_values",
+        "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Histologie — Tissus fondamentaux — 3 niveaux
+-- ============================================================
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_epithelial_id uuid;
+  v_level_connective_id uuid;
+  v_level_muscle_nerve_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'histology' AND slug = 'fundamental_tissues';
+
+  IF v_chapter_id IS NULL THEN
+    RAISE EXCEPTION 'Chapter histology/fundamental_tissues not found';
+  END IF;
+
+  -- ---- Le tissu epithelial ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'epithelial_tissue',
+    'Le tissu epithelial',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu educatif. Ne remplace pas un avis medical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le tissu epithelial",
+          "subtitle": "Revetement et protection",
+          "body": "Le tissu epithelial recouvre les surfaces internes et externes du corps. Ses fonctions principales sont la protection, l'absorption et la secretion. On distingue l'epithelium simple (une seule couche de cellules) de l'epithelium stratifie (plusieurs couches).",
+          "fact": "L'epiderme, la couche superficielle de la peau, est un epithelium stratifie squameux.",
+          "visual": {"type": "placeholder", "alt": "tissu epithelial"},
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "epithelial_function_001",
+          "question": "Quelle est la fonction principale du tissu epithelial de revetement ?",
+          "options": ["Recouvrir et proteger les surfaces du corps", "Transmettre les influx nerveux", "Contracter les organes", "Stocker les graisses"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "epithelial_simple_001",
+          "prompt": "Un epithelium ___ est compose d'une seule couche de cellules.",
+          "timerSeconds": 45,
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Tissu epithelial maitrise",
+          "body": "Tu connais maintenant la definition et la classification du tissu epithelial.",
+          "masteredConcepts": ["histology.epithelial.definition", "histology.epithelial.simple_vs_stratified"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_epithelial_id;
+
+  IF v_level_epithelial_id IS NULL THEN
+    SELECT id INTO v_level_epithelial_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'epithelial_tissue';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_epithelial_id,
+    $json${
+      "epithelial_function_001": {
+        "correctIndex": 0,
+        "explanation": "Le tissu epithelial de revetement forme une barriere protectrice a la surface des organes et des cavites du corps.",
+        "conceptKey": "histology.epithelial.definition",
+        "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+      },
+      "epithelial_simple_001": {
+        "acceptedAnswers": ["simple", "unistratifie"],
+        "explanation": "Un epithelium simple ne contient qu'une seule couche de cellules, toutes en contact avec la membrane basale.",
+        "conceptKey": "histology.epithelial.simple_vs_stratified",
+        "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Le tissu conjonctif ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'connective_tissue',
+    'Le tissu conjonctif',
+    2,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu educatif. Ne remplace pas un avis medical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le tissu conjonctif",
+          "subtitle": "Soutien et liaison",
+          "body": "Le tissu conjonctif assure le soutien et la liaison entre les autres tissus. Il est compose de cellules (fibroblastes, adipocytes, macrophages) et d'une matrice extracellulaire riche en fibres de collagene et fibres elastiques. Il existe de nombreuses formes : lache, dense, graisseux, osseux, cartilagineux et sanguin.",
+          "fact": "Le collagene est la proteine la plus abondante du corps humain, representant environ 25 a 35 % des proteines totales.",
+          "visual": {"type": "placeholder", "alt": "tissu conjonctif"},
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "connective_collagen_001",
+          "question": "Quel est le composant principal de la matrice extracellulaire du tissu conjonctif dense ?",
+          "options": ["Les fibres de collagene", "Les fibres musculaires", "Les axones nerveux", "Les villosites intestinales"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "connective_fibroblasts_001",
+          "prompt": "Les ___ sont les cellules productrices de fibres dans le tissu conjonctif.",
+          "timerSeconds": 45,
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Tissu conjonctif maitrise",
+          "body": "Tu connais maintenant la composition et les roles du tissu conjonctif.",
+          "masteredConcepts": ["histology.connective.definition", "histology.connective.components"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_connective_id;
+
+  IF v_level_connective_id IS NULL THEN
+    SELECT id INTO v_level_connective_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'connective_tissue';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_connective_id,
+    $json${
+      "connective_collagen_001": {
+        "correctIndex": 0,
+        "explanation": "Dans le tissu conjonctif dense, les fibres de collagene (type I) constituent la majorite de la matrice extracellulaire.",
+        "conceptKey": "histology.connective.definition",
+        "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+      },
+      "connective_fibroblasts_001": {
+        "acceptedAnswers": ["fibroblastes", "fibroblaste"],
+        "explanation": "Les fibroblastes sont les cellules principales du tissu conjonctif. Ils synthetisent le collagene et d'autres composants de la matrice extracellulaire.",
+        "conceptKey": "histology.connective.components",
+        "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Les tissus musculaire et nerveux ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'muscle_nerve_tissue',
+    'Tissus musculaire et nerveux',
+    3,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu educatif. Ne remplace pas un avis medical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Tissus musculaire et nerveux",
+          "subtitle": "Les 4 tissus fondamentaux",
+          "body": "Le tissu musculaire se decline en trois types : strie squelettique (volontaire), strie cardiaque (involontaire) et lisse (involontaire). Le tissu nerveux est compose de neurones (cellules conductrices) et de cellules gliales (soutien). Ces quatre types — epithelial, conjonctif, musculaire, nerveux — forment la base de tous les organes.",
+          "fact": "Le cerveau humain contient environ 86 milliards de neurones.",
+          "visual": {"type": "placeholder", "alt": "tissus musculaire et nerveux"},
+          "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+        },
+        {
+          "type": "recall",
+          "questionKey": "tissue_types_count_001",
+          "question": "Combien y a-t-il de types de tissus fondamentaux dans le corps humain ?",
+          "options": ["4 — epithelial, conjonctif, musculaire, nerveux", "3 — epithelial, musculaire, nerveux", "5 — epithelial, conjonctif, musculaire, nerveux, osseux", "2 — mou et dur"],
+          "timerSeconds": 45,
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "cardiac_muscle_001",
+          "prompt": "Le tissu musculaire cardiaque est ___ et involontaire.",
+          "timerSeconds": 45,
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "4 tissus fondamentaux maitrises",
+          "body": "Tu connais maintenant les quatre grands types de tissus fondamentaux du corps humain.",
+          "masteredConcepts": ["histology.muscle_tissue.types", "histology.nerve_tissue.definition"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_muscle_nerve_id;
+
+  IF v_level_muscle_nerve_id IS NULL THEN
+    SELECT id INTO v_level_muscle_nerve_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'muscle_nerve_tissue';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_muscle_nerve_id,
+    $json${
+      "tissue_types_count_001": {
+        "correctIndex": 0,
+        "explanation": "Il existe 4 types de tissus fondamentaux : epithelial (revetement), conjonctif (soutien), musculaire (contraction) et nerveux (conduction).",
+        "conceptKey": "histology.muscle_tissue.types",
+        "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+      },
+      "cardiac_muscle_001": {
+        "acceptedAnswers": ["strie", "strie cardiaque"],
+        "explanation": "Le muscle cardiaque est qualifie de strie car ses cellules presentent des stries transversales visibles en microscopie.",
+        "conceptKey": "histology.nerve_tissue.definition",
+        "sourceRefs": [{"title": "Open educational references", "type": "open_educational"}]
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
