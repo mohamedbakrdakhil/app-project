@@ -1,0 +1,174 @@
+{
+  "chapter": {
+    "subject_id": "physiology",
+    "slug": "respiratory_system",
+    "title_fr": "Système respiratoire",
+    "description_fr": "Ventilation, échanges gazeux et régulation de la respiration.",
+    "icon": "🫁",
+    "order_index": 2
+  },
+  "levels": [
+    {
+      "slug": "resp_ventilation",
+      "title_fr": "La ventilation pulmonaire",
+      "order_index": 1,
+      "difficulty": "easy",
+      "xp_reward": 100,
+      "content_public": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "La ventilation pulmonaire",
+            "body": "La ventilation pulmonaire assure le renouvellement de l'air alvéolaire. L'inspiration est active : le diaphragme se contracte et s'abaisse, les poumons se dilatent et la pression intrapulmonaire diminue. L'expiration est passive au repos. Le volume courant normal est d'environ 500 mL. La fréquence respiratoire normale est de 12 à 20 cycles par minute.",
+            "sourceRefs": []
+          },
+          {
+            "type": "recall",
+            "questionKey": "resp_muscle_001",
+            "question": "Quel est le principal muscle de la respiration ?",
+            "options": ["Le diaphragme", "Les muscles intercostaux externes", "Le grand pectoral", "Le sternocléidomastoïdien"],
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "resp_volume_001",
+            "prompt": "Le volume courant normal est d'environ ___ mL.",
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Ventilation maîtrisée",
+            "body": "Tu connais maintenant les mécanismes de la ventilation pulmonaire.",
+            "masteredConcepts": ["physiology.respiratory.ventilation.mechanics", "physiology.respiratory.ventilation.tidal_volume"]
+          }
+        ]
+      },
+      "answer_key": {
+        "resp_muscle_001": {
+          "correctIndex": 0,
+          "explanation": "Le diaphragme est le principal muscle respiratoire. Sa contraction lors de l'inspiration abaisse le plancher thoracique et augmente le volume pulmonaire.",
+          "conceptKey": "physiology.respiratory.ventilation.mechanics",
+          "sourceRefs": []
+        },
+        "resp_volume_001": {
+          "acceptedAnswers": ["500"],
+          "explanation": "Le volume courant (VT) normal au repos est d'environ 500 mL, soit le volume d'air mobilisé lors d'un cycle respiratoire normal.",
+          "conceptKey": "physiology.respiratory.ventilation.tidal_volume",
+          "sourceRefs": []
+        }
+      }
+    },
+    {
+      "slug": "resp_echanges",
+      "title_fr": "Les échanges gazeux",
+      "order_index": 2,
+      "difficulty": "medium",
+      "xp_reward": 120,
+      "content_public": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "Les échanges gazeux",
+            "body": "L'hématose est l'ensemble des échanges gazeux entre l'air alvéolaire et le sang au niveau des capillaires pulmonaires. L'O2 diffuse de l'alvéole vers le sang (gradient de pression partielle), le CO2 diffuse du sang vers l'alvéole. L'O2 est transporté principalement lié à l'hémoglobine dans les érythrocytes. La SpO2 normale est supérieure à 95%.",
+            "sourceRefs": []
+          },
+          {
+            "type": "recall",
+            "questionKey": "resp_o2_transport_001",
+            "question": "Comment l'oxygène est-il principalement transporté dans le sang ?",
+            "options": ["Dissous dans le plasma", "Lié à l'albumine", "Lié à l'hémoglobine dans les érythrocytes", "Sous forme de bicarbonate"],
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "resp_spo2_001",
+            "prompt": "La saturation en O₂ normale (SpO₂) est supérieure à ___ %.",
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Échanges gazeux maîtrisés",
+            "body": "Tu comprends maintenant les mécanismes des échanges gazeux pulmonaires.",
+            "masteredConcepts": ["physiology.respiratory.gas_exchange.hematosis", "physiology.respiratory.gas_exchange.oxygen_transport"]
+          }
+        ]
+      },
+      "answer_key": {
+        "resp_o2_transport_001": {
+          "correctIndex": 2,
+          "explanation": "Plus de 97% de l'oxygène est transporté lié à l'hémoglobine dans les érythrocytes. Seulement 3% est dissous dans le plasma.",
+          "conceptKey": "physiology.respiratory.gas_exchange.oxygen_transport",
+          "sourceRefs": []
+        },
+        "resp_spo2_001": {
+          "acceptedAnswers": ["95"],
+          "explanation": "La SpO2 (saturation en oxygène mesurée par oxymétrie de pouls) est normalement supérieure à 95%. En dessous de 90% on parle d'hypoxémie.",
+          "conceptKey": "physiology.respiratory.gas_exchange.hematosis",
+          "sourceRefs": []
+        }
+      }
+    },
+    {
+      "slug": "resp_regulation",
+      "title_fr": "La régulation respiratoire",
+      "order_index": 3,
+      "difficulty": "hard",
+      "xp_reward": 150,
+      "content_public": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 6,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "La régulation respiratoire",
+            "body": "Le centre respiratoire principal est situé dans le bulbe rachidien (medulla oblongata). Il génère le rythme de base de la ventilation. Le principal stimulus de la ventilation est l'augmentation de la PaCO2 (hypercapnie), détectée par les chémorécepteurs centraux (bulbe) et périphériques (corpuscules carotidiens et aortiques). L'hypoxémie stimule principalement les chémorécepteurs périphériques.",
+            "sourceRefs": []
+          },
+          {
+            "type": "recall",
+            "questionKey": "resp_stimulus_001",
+            "question": "Quel est le principal stimulus de la ventilation chez l'adulte sain ?",
+            "options": ["La diminution de la PaO₂", "L'augmentation de la PaCO₂", "La diminution du pH urinaire", "L'augmentation de la fréquence cardiaque"],
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "resp_center_001",
+            "prompt": "Le centre respiratoire principal est situé dans le ___ allongé.",
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Régulation respiratoire maîtrisée",
+            "body": "Tu comprends maintenant la régulation nerveuse et chimique de la respiration.",
+            "masteredConcepts": ["physiology.respiratory.regulation.center", "physiology.respiratory.regulation.chemoreceptors"]
+          }
+        ]
+      },
+      "answer_key": {
+        "resp_stimulus_001": {
+          "correctIndex": 1,
+          "explanation": "L'augmentation de la PaCO2 (hypercapnie) est le principal stimulus de la ventilation chez l'adulte sain, via les chémorécepteurs centraux du bulbe rachidien.",
+          "conceptKey": "physiology.respiratory.regulation.chemoreceptors",
+          "sourceRefs": []
+        },
+        "resp_center_001": {
+          "acceptedAnswers": ["bulbe"],
+          "explanation": "Le centre respiratoire principal est localisé dans le bulbe rachidien (medulla oblongata), qui génère le rythme respiratoire de base.",
+          "conceptKey": "physiology.respiratory.regulation.center",
+          "sourceRefs": []
+        }
+      }
+    }
+  ]
+}

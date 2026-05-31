@@ -1583,6 +1583,15 @@ BEGIN
           "xpReward": 10
         },
         {
+          "type": "clinical_case",
+          "questionKey": "inflam_purulent_001",
+          "scenario": "Un patient de 45 ans présente une plaie infectée avec pus abondant, fièvre à 38.5°C et CRP élevée depuis 5 jours. La biopsie montre de nombreux polynucléaires neutrophiles.",
+          "question": "Quel type d'inflammation décrit ce tableau clinique ?",
+          "options": ["Inflammation chronique granulomateuse", "Inflammation aiguë purulente", "Inflammation fibrosante", "Inflammation séreuse"],
+          "xpReward": 25,
+          "difficulty": "medium"
+        },
+        {
           "type": "complete",
           "title": "Cellules de l'inflammation maîtrisées",
           "body": "Tu connais maintenant les cellules impliquées dans la réponse inflammatoire.",
@@ -1617,6 +1626,12 @@ BEGIN
         "acceptedAnswers": ["diapédèse", "diapedese"],
         "explanation": "La diapédèse est le processus par lequel les leucocytes traversent activement la paroi des vaisseaux sanguins pour rejoindre le foyer inflammatoire.",
         "conceptKey": "pathology.inflammation.cells.diapedesis",
+        "sourceRefs": []
+      },
+      "inflam_purulent_001": {
+        "correctIndex": 1,
+        "explanation": "Les polynucléaires neutrophiles et la formation de pus caractérisent l'inflammation aiguë purulente.",
+        "conceptKey": "pathology.inflammation.cells.purulent",
         "sourceRefs": []
       }
     }$json$::jsonb
@@ -2210,6 +2225,524 @@ BEGIN
         "acceptedAnswers": ["P450", "CYP450", "p450"],
         "explanation": "Le cytochrome P450 (CYP450) est le principal système enzymatique du métabolisme hépatique des médicaments.",
         "conceptKey": "pharmacology.pk.interactions.types",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Biochimie chapitre 2 — Glucides et Lipides
+-- ============================================================
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, icon, order_index, is_published)
+VALUES (
+  'biochemistry',
+  'glucides_lipides',
+  'Glucides et Lipides',
+  '🍬',
+  2,
+  true
+)
+ON CONFLICT (subject_id, slug) DO UPDATE
+  SET title_fr = EXCLUDED.title_fr,
+      is_published = EXCLUDED.is_published;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_gl1_id uuid;
+  v_level_gl2_id uuid;
+  v_level_gl3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'biochemistry' AND slug = 'glucides_lipides';
+
+  IF v_chapter_id IS NULL THEN
+    RAISE EXCEPTION 'Chapter biochemistry/glucides_lipides not found';
+  END IF;
+
+  -- ---- La glycolyse ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'gl_glycolyse',
+    'La glycolyse',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "La glycolyse",
+          "body": "La glycolyse est la voie de dégradation du glucose en pyruvate. Elle se déroule en 10 étapes dans le cytoplasme. Le bilan net est de 2 ATP et 2 NADH par molécule de glucose. Elle est la première étape du catabolisme glucidique, possible en anaérobie.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "gl_atp_001",
+          "question": "Quel est le gain net en ATP de la glycolyse pour une molécule de glucose ?",
+          "options": ["1 ATP", "2 ATP", "4 ATP", "38 ATP"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "gl_pyruvate_001",
+          "prompt": "La glycolyse transforme le ___ en pyruvate.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Glycolyse maîtrisée",
+          "body": "Tu connais maintenant les bases de la glycolyse.",
+          "masteredConcepts": ["biochemistry.glucides.glycolysis.atp_yield", "biochemistry.glucides.glycolysis.overview"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_gl1_id;
+
+  IF v_level_gl1_id IS NULL THEN
+    SELECT id INTO v_level_gl1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'gl_glycolyse';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_gl1_id,
+    $json${
+      "gl_atp_001": {
+        "correctIndex": 1,
+        "explanation": "La glycolyse produit 4 ATP bruts mais en consomme 2, soit un gain net de 2 ATP par molécule de glucose.",
+        "conceptKey": "biochemistry.glucides.glycolysis.atp_yield",
+        "sourceRefs": []
+      },
+      "gl_pyruvate_001": {
+        "acceptedAnswers": ["glucose"],
+        "explanation": "La glycolyse transforme le glucose (C6) en deux molécules de pyruvate (C3) en 10 réactions enzymatiques.",
+        "conceptKey": "biochemistry.glucides.glycolysis.overview",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Le cycle de Krebs ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'gl_krebs',
+    'Le cycle de Krebs',
+    2,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Le cycle de Krebs",
+          "body": "Le cycle de Krebs (cycle de l'acide citrique) se déroule dans la matrice mitochondriale. Le pyruvate est d'abord converti en acétyl-CoA. Le cycle comprend 8 réactions et produit par tour : 3 NADH, 1 FADH2, 1 GTP et 2 CO2. Il alimente la chaîne respiratoire en coenzymes réduits.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "krebs_location_001",
+          "question": "Où se déroule le cycle de Krebs dans la cellule ?",
+          "options": ["Le cytoplasme", "La matrice mitochondriale", "La membrane plasmique", "Le réticulum endoplasmique"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "krebs_cofactor_001",
+          "prompt": "Le cycle de Krebs produit du CO₂ et des cofacteurs réduits comme le ___.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Cycle de Krebs maîtrisé",
+          "body": "Tu comprends maintenant le cycle de Krebs et ses produits.",
+          "masteredConcepts": ["biochemistry.glucides.krebs.location", "biochemistry.glucides.krebs.products"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_gl2_id;
+
+  IF v_level_gl2_id IS NULL THEN
+    SELECT id INTO v_level_gl2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'gl_krebs';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_gl2_id,
+    $json${
+      "krebs_location_001": {
+        "correctIndex": 1,
+        "explanation": "Le cycle de Krebs se déroule dans la matrice mitochondriale, où les enzymes du cycle sont localisées.",
+        "conceptKey": "biochemistry.glucides.krebs.location",
+        "sourceRefs": []
+      },
+      "krebs_cofactor_001": {
+        "acceptedAnswers": ["NADH"],
+        "explanation": "Le cycle de Krebs produit principalement du NADH (ainsi que du FADH2 et du GTP), qui alimentent la chaîne respiratoire mitochondriale.",
+        "conceptKey": "biochemistry.glucides.krebs.products",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Les lipides — structure et rôles ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'gl_lipides',
+    'Les lipides — structure et rôles',
+    3,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les lipides — structure et rôles",
+          "body": "Les lipides se divisent en trois grandes classes : triglycérides (réserve énergétique dans le tissu adipeux), phospholipides (constituants des membranes cellulaires en bicouche), stérols (cholestérol : précurseur des hormones stéroïdiennes, acides biliaires, vitamine D). Les lipides sont insolubles dans l'eau et transportés par les lipoprotéines.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "lipids_membrane_001",
+          "question": "Quel lipide est le plus abondant dans les membranes cellulaires ?",
+          "options": ["Les triglycérides", "Le cholestérol", "Les phospholipides", "Les sphingolipides"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "lipids_storage_001",
+          "prompt": "Les triglycérides sont stockés dans le tissu ___.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Lipides maîtrisés",
+          "body": "Tu connais maintenant les principales classes de lipides et leurs rôles.",
+          "masteredConcepts": ["biochemistry.lipids.classes", "biochemistry.lipids.membrane_composition"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_gl3_id;
+
+  IF v_level_gl3_id IS NULL THEN
+    SELECT id INTO v_level_gl3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'gl_lipides';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_gl3_id,
+    $json${
+      "lipids_membrane_001": {
+        "correctIndex": 2,
+        "explanation": "Les phospholipides forment la bicouche lipidique qui constitue la structure de base de toutes les membranes cellulaires.",
+        "conceptKey": "biochemistry.lipids.membrane_composition",
+        "sourceRefs": []
+      },
+      "lipids_storage_001": {
+        "acceptedAnswers": ["adipeux"],
+        "explanation": "Les triglycérides sont la principale forme de stockage de l'énergie et sont accumulés dans les adipocytes du tissu adipeux.",
+        "conceptKey": "biochemistry.lipids.classes",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Physiologie chapitre 2 — Système respiratoire
+-- ============================================================
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, icon, order_index, is_published)
+VALUES (
+  'physiology',
+  'respiratory_system',
+  'Système respiratoire',
+  '🫁',
+  2,
+  true
+)
+ON CONFLICT (subject_id, slug) DO UPDATE
+  SET title_fr = EXCLUDED.title_fr,
+      is_published = EXCLUDED.is_published;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_resp1_id uuid;
+  v_level_resp2_id uuid;
+  v_level_resp3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'physiology' AND slug = 'respiratory_system';
+
+  IF v_chapter_id IS NULL THEN
+    RAISE EXCEPTION 'Chapter physiology/respiratory_system not found';
+  END IF;
+
+  -- ---- La ventilation pulmonaire ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'resp_ventilation',
+    'La ventilation pulmonaire',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "La ventilation pulmonaire",
+          "body": "La ventilation pulmonaire assure le renouvellement de l'air alvéolaire. L'inspiration est active : le diaphragme se contracte et s'abaisse, les poumons se dilatent et la pression intrapulmonaire diminue. L'expiration est passive au repos. Le volume courant normal est d'environ 500 mL. La fréquence respiratoire normale est de 12 à 20 cycles par minute.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "resp_muscle_001",
+          "question": "Quel est le principal muscle de la respiration ?",
+          "options": ["Le diaphragme", "Les muscles intercostaux externes", "Le grand pectoral", "Le sternocléidomastoïdien"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "resp_volume_001",
+          "prompt": "Le volume courant normal est d'environ ___ mL.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Ventilation maîtrisée",
+          "body": "Tu connais maintenant les mécanismes de la ventilation pulmonaire.",
+          "masteredConcepts": ["physiology.respiratory.ventilation.mechanics", "physiology.respiratory.ventilation.tidal_volume"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_resp1_id;
+
+  IF v_level_resp1_id IS NULL THEN
+    SELECT id INTO v_level_resp1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'resp_ventilation';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_resp1_id,
+    $json${
+      "resp_muscle_001": {
+        "correctIndex": 0,
+        "explanation": "Le diaphragme est le principal muscle respiratoire. Sa contraction lors de l'inspiration abaisse le plancher thoracique et augmente le volume pulmonaire.",
+        "conceptKey": "physiology.respiratory.ventilation.mechanics",
+        "sourceRefs": []
+      },
+      "resp_volume_001": {
+        "acceptedAnswers": ["500"],
+        "explanation": "Le volume courant (VT) normal au repos est d'environ 500 mL, soit le volume d'air mobilisé lors d'un cycle respiratoire normal.",
+        "conceptKey": "physiology.respiratory.ventilation.tidal_volume",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Les échanges gazeux ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'resp_echanges',
+    'Les échanges gazeux',
+    2,
+    'medium',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Les échanges gazeux",
+          "body": "L'hématose est l'ensemble des échanges gazeux entre l'air alvéolaire et le sang au niveau des capillaires pulmonaires. L'O2 diffuse de l'alvéole vers le sang (gradient de pression partielle), le CO2 diffuse du sang vers l'alvéole. L'O2 est transporté principalement lié à l'hémoglobine dans les érythrocytes. La SpO2 normale est supérieure à 95%.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "resp_o2_transport_001",
+          "question": "Comment l'oxygène est-il principalement transporté dans le sang ?",
+          "options": ["Dissous dans le plasma", "Lié à l'albumine", "Lié à l'hémoglobine dans les érythrocytes", "Sous forme de bicarbonate"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "resp_spo2_001",
+          "prompt": "La saturation en O₂ normale (SpO₂) est supérieure à ___ %.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Échanges gazeux maîtrisés",
+          "body": "Tu comprends maintenant les mécanismes des échanges gazeux pulmonaires.",
+          "masteredConcepts": ["physiology.respiratory.gas_exchange.hematosis", "physiology.respiratory.gas_exchange.oxygen_transport"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_resp2_id;
+
+  IF v_level_resp2_id IS NULL THEN
+    SELECT id INTO v_level_resp2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'resp_echanges';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_resp2_id,
+    $json${
+      "resp_o2_transport_001": {
+        "correctIndex": 2,
+        "explanation": "Plus de 97% de l'oxygène est transporté lié à l'hémoglobine dans les érythrocytes. Seulement 3% est dissous dans le plasma.",
+        "conceptKey": "physiology.respiratory.gas_exchange.oxygen_transport",
+        "sourceRefs": []
+      },
+      "resp_spo2_001": {
+        "acceptedAnswers": ["95"],
+        "explanation": "La SpO2 (saturation en oxygène mesurée par oxymétrie de pouls) est normalement supérieure à 95%. En dessous de 90% on parle d'hypoxémie.",
+        "conceptKey": "physiology.respiratory.gas_exchange.hematosis",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- La régulation respiratoire ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'resp_regulation',
+    'La régulation respiratoire',
+    3,
+    'hard',
+    150,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "La régulation respiratoire",
+          "body": "Le centre respiratoire principal est situé dans le bulbe rachidien (medulla oblongata). Il génère le rythme de base de la ventilation. Le principal stimulus de la ventilation est l'augmentation de la PaCO2 (hypercapnie), détectée par les chémorécepteurs centraux (bulbe) et périphériques (corpuscules carotidiens et aortiques). L'hypoxémie stimule principalement les chémorécepteurs périphériques.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "resp_stimulus_001",
+          "question": "Quel est le principal stimulus de la ventilation chez l'adulte sain ?",
+          "options": ["La diminution de la PaO₂", "L'augmentation de la PaCO₂", "La diminution du pH urinaire", "L'augmentation de la fréquence cardiaque"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "resp_center_001",
+          "prompt": "Le centre respiratoire principal est situé dans le ___ allongé.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Régulation respiratoire maîtrisée",
+          "body": "Tu comprends maintenant la régulation nerveuse et chimique de la respiration.",
+          "masteredConcepts": ["physiology.respiratory.regulation.center", "physiology.respiratory.regulation.chemoreceptors"]
+        }
+      ]
+    }$json$::jsonb,
+    'published',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE SET
+    title_fr = EXCLUDED.title_fr,
+    content_public = EXCLUDED.content_public,
+    is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_resp3_id;
+
+  IF v_level_resp3_id IS NULL THEN
+    SELECT id INTO v_level_resp3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'resp_regulation';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_resp3_id,
+    $json${
+      "resp_stimulus_001": {
+        "correctIndex": 1,
+        "explanation": "L'augmentation de la PaCO2 (hypercapnie) est le principal stimulus de la ventilation chez l'adulte sain, via les chémorécepteurs centraux du bulbe rachidien.",
+        "conceptKey": "physiology.respiratory.regulation.chemoreceptors",
+        "sourceRefs": []
+      },
+      "resp_center_001": {
+        "acceptedAnswers": ["bulbe"],
+        "explanation": "Le centre respiratoire principal est localisé dans le bulbe rachidien (medulla oblongata), qui génère le rythme respiratoire de base.",
+        "conceptKey": "physiology.respiratory.regulation.center",
         "sourceRefs": []
       }
     }$json$::jsonb

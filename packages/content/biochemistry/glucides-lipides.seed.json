@@ -1,0 +1,174 @@
+{
+  "chapter": {
+    "subject_id": "biochemistry",
+    "slug": "glucides_lipides",
+    "title_fr": "Glucides et Lipides",
+    "description_fr": "Métabolisme des glucides et structure des lipides.",
+    "icon": "🍬",
+    "order_index": 2
+  },
+  "levels": [
+    {
+      "slug": "gl_glycolyse",
+      "title_fr": "La glycolyse",
+      "order_index": 1,
+      "difficulty": "easy",
+      "xp_reward": 100,
+      "content_public": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "La glycolyse",
+            "body": "La glycolyse est la voie de dégradation du glucose en pyruvate. Elle se déroule en 10 étapes dans le cytoplasme. Le bilan net est de 2 ATP et 2 NADH par molécule de glucose. Elle est la première étape du catabolisme glucidique, possible en anaérobie.",
+            "sourceRefs": []
+          },
+          {
+            "type": "recall",
+            "questionKey": "gl_atp_001",
+            "question": "Quel est le gain net en ATP de la glycolyse pour une molécule de glucose ?",
+            "options": ["1 ATP", "2 ATP", "4 ATP", "38 ATP"],
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "gl_pyruvate_001",
+            "prompt": "La glycolyse transforme le ___ en pyruvate.",
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Glycolyse maîtrisée",
+            "body": "Tu connais maintenant les bases de la glycolyse.",
+            "masteredConcepts": ["biochemistry.glucides.glycolysis.atp_yield", "biochemistry.glucides.glycolysis.overview"]
+          }
+        ]
+      },
+      "answer_key": {
+        "gl_atp_001": {
+          "correctIndex": 1,
+          "explanation": "La glycolyse produit 4 ATP bruts mais en consomme 2, soit un gain net de 2 ATP par molécule de glucose.",
+          "conceptKey": "biochemistry.glucides.glycolysis.atp_yield",
+          "sourceRefs": []
+        },
+        "gl_pyruvate_001": {
+          "acceptedAnswers": ["glucose"],
+          "explanation": "La glycolyse transforme le glucose (C6) en deux molécules de pyruvate (C3) en 10 réactions enzymatiques.",
+          "conceptKey": "biochemistry.glucides.glycolysis.overview",
+          "sourceRefs": []
+        }
+      }
+    },
+    {
+      "slug": "gl_krebs",
+      "title_fr": "Le cycle de Krebs",
+      "order_index": 2,
+      "difficulty": "medium",
+      "xp_reward": 120,
+      "content_public": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "Le cycle de Krebs",
+            "body": "Le cycle de Krebs (cycle de l'acide citrique) se déroule dans la matrice mitochondriale. Le pyruvate est d'abord converti en acétyl-CoA. Le cycle comprend 8 réactions et produit par tour : 3 NADH, 1 FADH2, 1 GTP et 2 CO2. Il alimente la chaîne respiratoire en coenzymes réduits.",
+            "sourceRefs": []
+          },
+          {
+            "type": "recall",
+            "questionKey": "krebs_location_001",
+            "question": "Où se déroule le cycle de Krebs dans la cellule ?",
+            "options": ["Le cytoplasme", "La matrice mitochondriale", "La membrane plasmique", "Le réticulum endoplasmique"],
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "krebs_cofactor_001",
+            "prompt": "Le cycle de Krebs produit du CO₂ et des cofacteurs réduits comme le ___.",
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Cycle de Krebs maîtrisé",
+            "body": "Tu comprends maintenant le cycle de Krebs et ses produits.",
+            "masteredConcepts": ["biochemistry.glucides.krebs.location", "biochemistry.glucides.krebs.products"]
+          }
+        ]
+      },
+      "answer_key": {
+        "krebs_location_001": {
+          "correctIndex": 1,
+          "explanation": "Le cycle de Krebs se déroule dans la matrice mitochondriale, où les enzymes du cycle sont localisées.",
+          "conceptKey": "biochemistry.glucides.krebs.location",
+          "sourceRefs": []
+        },
+        "krebs_cofactor_001": {
+          "acceptedAnswers": ["NADH"],
+          "explanation": "Le cycle de Krebs produit principalement du NADH (ainsi que du FADH2 et du GTP), qui alimentent la chaîne respiratoire mitochondriale.",
+          "conceptKey": "biochemistry.glucides.krebs.products",
+          "sourceRefs": []
+        }
+      }
+    },
+    {
+      "slug": "gl_lipides",
+      "title_fr": "Les lipides — structure et rôles",
+      "order_index": 3,
+      "difficulty": "medium",
+      "xp_reward": 120,
+      "content_public": {
+        "schemaVersion": 1,
+        "locale": "fr",
+        "estimatedMinutes": 5,
+        "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+        "steps": [
+          {
+            "type": "intro",
+            "title": "Les lipides — structure et rôles",
+            "body": "Les lipides se divisent en trois grandes classes : triglycérides (réserve énergétique dans le tissu adipeux), phospholipides (constituants des membranes cellulaires en bicouche), stérols (cholestérol : précurseur des hormones stéroïdiennes, acides biliaires, vitamine D). Les lipides sont insolubles dans l'eau et transportés par les lipoprotéines.",
+            "sourceRefs": []
+          },
+          {
+            "type": "recall",
+            "questionKey": "lipids_membrane_001",
+            "question": "Quel lipide est le plus abondant dans les membranes cellulaires ?",
+            "options": ["Les triglycérides", "Le cholestérol", "Les phospholipides", "Les sphingolipides"],
+            "xpReward": 15
+          },
+          {
+            "type": "fill_blank",
+            "questionKey": "lipids_storage_001",
+            "prompt": "Les triglycérides sont stockés dans le tissu ___.",
+            "xpReward": 10
+          },
+          {
+            "type": "complete",
+            "title": "Lipides maîtrisés",
+            "body": "Tu connais maintenant les principales classes de lipides et leurs rôles.",
+            "masteredConcepts": ["biochemistry.lipids.classes", "biochemistry.lipids.membrane_composition"]
+          }
+        ]
+      },
+      "answer_key": {
+        "lipids_membrane_001": {
+          "correctIndex": 2,
+          "explanation": "Les phospholipides forment la bicouche lipidique qui constitue la structure de base de toutes les membranes cellulaires.",
+          "conceptKey": "biochemistry.lipids.membrane_composition",
+          "sourceRefs": []
+        },
+        "lipids_storage_001": {
+          "acceptedAnswers": ["adipeux"],
+          "explanation": "Les triglycérides sont la principale forme de stockage de l'énergie et sont accumulés dans les adipocytes du tissu adipeux.",
+          "conceptKey": "biochemistry.lipids.classes",
+          "sourceRefs": []
+        }
+      }
+    }
+  ]
+}
