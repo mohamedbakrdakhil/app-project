@@ -7486,3 +7486,505 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- ORL (Oto-Rhino-Laryngologie) — subject + chapter + 3 niveaux
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('orl', 'ORL', 'ENT', '👂', '#ff7043', 'Oreille, nez, gorge et voies aérodigestives supérieures.', 21, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, published)
+VALUES ('orl', 'ear_nose_throat', 'Oreille, nez et gorge', 'Anatomie et principales pathologies ORL.', '👂', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_orl1_id uuid;
+  v_level_orl2_id uuid;
+  v_level_orl3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'orl' AND slug = 'ear_nose_throat';
+
+  -- ---- Niveau 1: Anatomie de l'oreille ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'orl_ear',
+    'Anatomie de l''oreille',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 4,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Anatomie de l'oreille",
+          "body": "L'oreille comprend trois parties. Oreille externe : pavillon (pinna), conduit auditif externe, tympan. Oreille moyenne : osselets (marteau/malleus → enclume/incus → étrier/stapes) et trompe d'Eustache. Oreille interne : cochlée (audition) et canaux semi-circulaires + vestibule (équilibre). Types de surdité : surdité de transmission (oreille moyenne) vs surdité de perception (oreille interne ou nerf).",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "orl_ear_malleus_001",
+          "question": "Osselet transmettant les vibrations du tympan en premier ?",
+          "options": ["Le marteau (malleus)", "L'enclume (incus)", "L'étrier (stapes)", "La cochlée"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "orl_ear_eustache_001",
+          "prompt": "La ___ relie l'oreille moyenne au rhinopharynx et permet l'égalisation des pressions.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Oreille terminée",
+          "body": "Tu connais maintenant l'anatomie de l'oreille et les types de surdité.",
+          "masteredConcepts": ["orl.ear.ossicles", "orl.ear.eustachian_tube"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_orl1_id;
+
+  IF v_level_orl1_id IS NULL THEN
+    SELECT id INTO v_level_orl1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'orl_ear';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_orl1_id,
+    $json${
+      "orl_ear_malleus_001": {
+        "correctIndex": 0,
+        "explanation": "Le marteau (malleus) est le premier osselet en contact avec le tympan. Il transmet les vibrations à l'enclume puis à l'étrier, qui les transmet à l'oreille interne via la fenêtre ovale.",
+        "conceptKey": "orl.ear.ossicles",
+        "sourceRefs": []
+      },
+      "orl_ear_eustache_001": {
+        "acceptedAnswers": ["trompe d'Eustache", "trompe eustache"],
+        "explanation": "La trompe d'Eustache relie l'oreille moyenne au rhinopharynx et permet l'équilibration des pressions de part et d'autre du tympan. Son dysfonctionnement provoque une otite séreuse.",
+        "conceptKey": "orl.ear.eustachian_tube",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Nez et sinus ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'orl_nose',
+    'Nez et sinus',
+    2,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Nez et sinus",
+          "body": "Anatomie du nez : septum nasal, cornets (turbinats), sinus paranasaux (frontal, maxillaire, ethmoïdal, sphénoïdal). Sinusite aiguë : inflammation < 4 semaines, rhinorrhée purulente, douleur faciale, fièvre. Rhinite allergique : médiée par IgE, saisonnière ou perannuelle. Épistaxis : saignement nasal, siège le plus fréquent = plexus de Kiesselbach (septum antérieur).",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "orl_nose_epistaxis_001",
+          "question": "Site le plus fréquent de saignement dans l'épistaxis ?",
+          "options": ["La paroi latérale du nez", "La tache vasculaire de Kiesselbach (septum antérieur)", "Le cornet inférieur", "Le sinus maxillaire"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "orl_nose_sinusite_001",
+          "prompt": "La sinusite est une inflammation des ___ paranasaux.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Nez et sinus terminés",
+          "body": "Tu connais maintenant l'anatomie nasale et les principales pathologies.",
+          "masteredConcepts": ["orl.nose.kiesselbach", "orl.nose.sinusitis"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_orl2_id;
+
+  IF v_level_orl2_id IS NULL THEN
+    SELECT id INTO v_level_orl2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'orl_nose';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_orl2_id,
+    $json${
+      "orl_nose_epistaxis_001": {
+        "correctIndex": 1,
+        "explanation": "Le plexus de Kiesselbach (tache vasculaire) est situé sur le septum antérieur et est le siège de 90% des épistaxis. Il est constitué de l'anastomose de plusieurs artères (ethmoïdale antérieure, sphéno-palatine, labiale supérieure).",
+        "conceptKey": "orl.nose.kiesselbach",
+        "sourceRefs": []
+      },
+      "orl_nose_sinusite_001": {
+        "acceptedAnswers": ["sinus"],
+        "explanation": "La sinusite est une inflammation des sinus paranasaux, le plus souvent d'origine infectieuse virale ou bactérienne (principalement Streptococcus pneumoniae et Haemophilus influenzae).",
+        "conceptKey": "orl.nose.sinusitis",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Gorge et larynx ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'orl_throat',
+    'Gorge et larynx',
+    3,
+    'hard',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Gorge et larynx",
+          "body": "Angine : virale (plus fréquente, Epstein-Barr) ou bactérienne (Streptocoque groupe A). Pharyngite. Laryngite. Stridor : inspiratoire (atteinte sus-glottique) ou expiratoire (atteinte sous-glottique). Épiglottite aiguë : urgence pédiatrique — fièvre élevée, dysphagie, voix étouffée, hypersalivation, position en trépied, refus d'ouverture buccale. Prise en charge : sécurisation des voies aériennes en priorité.",
+          "sourceRefs": []
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "orl_throat_epiglottitis_001",
+          "scenario": "Un enfant de 4 ans est amené aux urgences avec fièvre à 40°C, douleur pharyngée intense, voix étouffée, hypersalivation et position en trépied. L'examen est difficile car l'enfant refuse d'ouvrir la bouche.",
+          "question": "Quel diagnostic faut-il évoquer en urgence ?",
+          "options": ["Angine à streptocoque", "Laryngite sous-glottique", "Épiglottite aiguë", "Abcès périamygdalien"],
+          "difficulty": "hard",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "orl_throat_strep_001",
+          "question": "Germe le plus souvent impliqué dans l'angine bactérienne ?",
+          "options": ["Streptocoque alpha-hémolytique", "Streptocoque bêta-hémolytique du groupe A", "Staphylocoque aureus", "Haemophilus influenzae"],
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Gorge et larynx terminés",
+          "body": "Tu connais maintenant les pathologies pharyngées et laryngées, dont l'épiglottite.",
+          "masteredConcepts": ["orl.throat.epiglottitis", "orl.throat.bacterial_tonsillitis"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_orl3_id;
+
+  IF v_level_orl3_id IS NULL THEN
+    SELECT id INTO v_level_orl3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'orl_throat';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_orl3_id,
+    $json${
+      "orl_throat_epiglottitis_001": {
+        "correctIndex": 2,
+        "explanation": "L'épiglottite aiguë est une urgence vitale. La triade classique : fièvre élevée, dysphagie avec hypersalivation, voix étouffée ('muffled voice'). La position en trépied (penché en avant, bouche ouverte) est pathognomonique. Ne pas tenter d'examiner la gorge sans sécurisation des voies aériennes.",
+        "conceptKey": "orl.throat.epiglottitis",
+        "sourceRefs": []
+      },
+      "orl_throat_strep_001": {
+        "correctIndex": 1,
+        "explanation": "Le Streptocoque bêta-hémolytique du groupe A (SGA, Streptococcus pyogenes) est le principal germe responsable des angines bactériennes (20-40% des angines). Le TDR (test de diagnostic rapide) permet de le détecter en consultation.",
+        "conceptKey": "orl.throat.bacterial_tonsillitis",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Physiologie — heart_failure_coronary chapter (order_index 4)
+-- ============================================================
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, published)
+VALUES ('physiology', 'heart_failure_coronary', 'Insuffisance cardiaque et coronaropathie', 'Physiopathologie de l''insuffisance cardiaque et des syndromes coronariens.', '❤️‍🩹', 4, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_card2_1_id uuid;
+  v_level_card2_2_id uuid;
+  v_level_card2_3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'physiology' AND slug = 'heart_failure_coronary';
+
+  -- ---- Niveau 1: Insuffisance cardiaque ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'card_heart_failure',
+    'Insuffisance cardiaque',
+    1,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Insuffisance cardiaque",
+          "body": "Insuffisance cardiaque systolique : FE < 40%, ventricule dilaté, contractilité réduite. Insuffisance cardiaque diastolique : FE préservée, ventricule rigide. IC gauche → congestion pulmonaire : dyspnée, orthopnée, crépitants. IC droite → congestion systémique : œdèmes des membres inférieurs, hépatomégalie, turgescence jugulaire. Classification NYHA : I (asymptomatique) → IV (symptômes au repos).",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "card_hf_left_001",
+          "question": "Signe caractéristique de l'insuffisance cardiaque gauche ?",
+          "options": ["Les œdèmes des membres inférieurs", "La dyspnée et les crépitants pulmonaires", "La turgescence jugulaire", "L'hépatomégalie"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "card_hf_ef_001",
+          "prompt": "La fraction d'éjection normale est supérieure à ___ %.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Insuffisance cardiaque terminée",
+          "body": "Tu connais maintenant la physiopathologie et les signes de l'insuffisance cardiaque.",
+          "masteredConcepts": ["physiology.heart_failure.systolic_diastolic", "physiology.heart_failure.ejection_fraction"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_card2_1_id;
+
+  IF v_level_card2_1_id IS NULL THEN
+    SELECT id INTO v_level_card2_1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'card_heart_failure';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_card2_1_id,
+    $json${
+      "card_hf_left_001": {
+        "correctIndex": 1,
+        "explanation": "L'insuffisance cardiaque gauche entraîne une congestion pulmonaire en amont du ventricule gauche défaillant. Les signes caractéristiques sont la dyspnée d'effort puis de repos, l'orthopnée (dyspnée en décubitus) et les crépitants bibasaux à l'auscultation.",
+        "conceptKey": "physiology.heart_failure.left_sided",
+        "sourceRefs": []
+      },
+      "card_hf_ef_001": {
+        "acceptedAnswers": ["55", "50"],
+        "explanation": "La fraction d'éjection (FE) normale est supérieure à 55%. On parle d'IC à FE réduite (ICFEr) si FE < 40%, et d'IC à FE préservée (ICFEp) si FE ≥ 50%.",
+        "conceptKey": "physiology.heart_failure.ejection_fraction",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Syndromes coronariens aigus ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'card_acs',
+    'Syndromes coronariens aigus',
+    2,
+    'hard',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Syndromes coronariens aigus",
+          "body": "Spectre des SCA : angor instable (sans élévation troponine) → NSTEMI (troponine+, sans sus-ST) → STEMI (troponine+, sus-ST). Symptômes : douleur thoracique constrictive, diaphorèse, dyspnée, nausées. ECG dans le STEMI : sus-décalage du segment ST. Traitement : aspirine + inhibiteur P2Y12, anticoagulation, reperfusion par angioplastie primaire (ICP < 120 min dans le STEMI).",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "card_acs_delay_001",
+          "question": "Délai maximal recommandé pour l'angioplastie primaire dans le STEMI ?",
+          "options": ["60 minutes", "90 minutes", "120 minutes", "180 minutes"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "card_acs_ecg_001",
+          "prompt": "Dans le STEMI, l'ECG montre un sus-décalage du segment ___.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "SCA terminés",
+          "body": "Tu connais maintenant le spectre des syndromes coronariens aigus et leur prise en charge.",
+          "masteredConcepts": ["physiology.acs.stemi_nstemi", "physiology.acs.primary_pci"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_card2_2_id;
+
+  IF v_level_card2_2_id IS NULL THEN
+    SELECT id INTO v_level_card2_2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'card_acs';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_card2_2_id,
+    $json${
+      "card_acs_delay_001": {
+        "correctIndex": 2,
+        "explanation": "Le délai porte-ballon (door-to-balloon) recommandé pour l'angioplastie primaire dans le STEMI est de 120 minutes maximum. Ce délai court est crucial pour limiter la nécrose myocardique.",
+        "conceptKey": "physiology.acs.primary_pci",
+        "sourceRefs": []
+      },
+      "card_acs_ecg_001": {
+        "acceptedAnswers": ["ST"],
+        "explanation": "Le STEMI (ST-Elevation Myocardial Infarction) se caractérise par un sus-décalage du segment ST ≥ 1 mm dans au moins 2 dérivations contiguës (ou ≥ 2 mm en V1-V3), traduisant une occlusion coronaire totale.",
+        "conceptKey": "physiology.acs.stemi_ecg",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Arythmies ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'card_arrhythmias',
+    'Arythmies cardiaques',
+    3,
+    'hard',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Arythmies cardiaques",
+          "body": "Bradycardies (< 60/min) : sinusales, blocs auriculo-ventriculaires. Tachycardies : TSV (flutter, FA), TV, FV. Fibrillation auriculaire : arythmie soutenue la plus fréquente, risque principal = AVC embolique, traitement = contrôle de fréquence ou de rythme + anticoagulation selon score CHA₂DS₂-VASc. Fibrillation ventriculaire : arrêt cardiaque → défibrillation immédiate.",
+          "sourceRefs": []
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "card_arrhythmias_af_001",
+          "scenario": "Un patient de 72 ans diabétique et hypertendu présente depuis 2 jours une fibrillation auriculaire à 110/min. Le score CHA₂DS₂-VASc est à 4. Il n'a pas d'antécédent hémorragique.",
+          "question": "Quelle est l'indication thérapeutique prioritaire chez ce patient ?",
+          "options": ["Cardioversion électrique immédiate", "Anticoagulation orale pour prévenir les accidents thromboemboliques", "Arrêt de tout traitement et surveillance", "Implantation d'un pacemaker"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "card_arrhythmias_chadsvasc_001",
+          "question": "Score évaluant le risque thromboembolique dans la fibrillation auriculaire ?",
+          "options": ["Le score CHA₂DS₂-VASc", "Le score GRACE", "Le score TIMI", "Le score HAS-BLED"],
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Arythmies terminées",
+          "body": "Tu connais maintenant les principales arythmies et leur prise en charge.",
+          "masteredConcepts": ["physiology.arrhythmias.atrial_fibrillation", "physiology.arrhythmias.chadsvasc"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_card2_3_id;
+
+  IF v_level_card2_3_id IS NULL THEN
+    SELECT id INTO v_level_card2_3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'card_arrhythmias';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_card2_3_id,
+    $json${
+      "card_arrhythmias_af_001": {
+        "correctIndex": 1,
+        "explanation": "Avec un score CHA₂DS₂-VASc à 4 (HTA, diabète, âge 72 ans), l'anticoagulation orale est formellement indiquée pour prévenir les accidents thromboemboliques (AVC). Les AOD (anticoagulants oraux directs) sont préférés. La cardioversion n'est pas une urgence ici.",
+        "conceptKey": "physiology.arrhythmias.atrial_fibrillation",
+        "sourceRefs": []
+      },
+      "card_arrhythmias_chadsvasc_001": {
+        "correctIndex": 0,
+        "explanation": "Le score CHA₂DS₂-VASc évalue le risque thromboembolique dans la FA. Il prend en compte : insuffisance Cardiaque, HTA, Age ≥ 75 ans (2 pts), Diabète, AVC/AIT antérieur (2 pts), maladie Vasculaire, Age 65-74 ans, Sexe féminin. Un score ≥ 2 chez l'homme (≥ 3 chez la femme) indique l'anticoagulation.",
+        "conceptKey": "physiology.arrhythmias.chadsvasc",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
