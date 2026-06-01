@@ -8494,3 +8494,501 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('pulmonology', 'Pneumologie', 'Pulmonology', '🫁', '#0288d1', 'Maladies des poumons et des voies respiratoires.', 24, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, published)
+VALUES ('pulmonology', 'lung_diseases', 'Maladies pulmonaires', 'BPCO, asthme, pneumopathies et cancer bronchique.', '🫁', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_pulm1_id uuid;
+  v_level_pulm2_id uuid;
+  v_level_pulm3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'pulmonology' AND slug = 'lung_diseases';
+
+  -- ---- Niveau 1: BPCO ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'pulm_copd',
+    'BPCO',
+    1,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "BPCO",
+          "body": "La BPCO est une obstruction bronchique irréversible définie par un rapport VEMS/CVF < 0,70 post-bronchodilatateur. Les stades GOLD I-IV sont déterminés par le % du VEMS prédit. Le tabagisme est la cause principale. La bronchite chronique = toux + expectoration ≥ 3 mois/an × 2 ans. L'emphysème = destruction alvéolaire. Traitement : LABA/LAMA, CSI en cas sévère, réhabilitation respiratoire.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "pulm_copd_spirometry_001",
+          "question": "Rapport spirométrique définissant l'obstruction bronchique dans la BPCO ?",
+          "options": ["VEMS/CVF > 0,80", "VEMS/CVF < 0,70", "CVF < 80% de la théorique", "VEMS < 50% de la théorique"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "pulm_copd_cause_001",
+          "prompt": "La cause principale de la BPCO est le ___ tabagique.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "BPCO terminée",
+          "body": "Tu connais maintenant les critères diagnostiques et les bases du traitement de la BPCO.",
+          "masteredConcepts": ["pulmonology.copd.spirometry", "pulmonology.copd.causes"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_pulm1_id;
+
+  IF v_level_pulm1_id IS NULL THEN
+    SELECT id INTO v_level_pulm1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'pulm_copd';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_pulm1_id,
+    $json${
+      "pulm_copd_spirometry_001": {
+        "correctIndex": 1,
+        "explanation": "Le VEMS/CVF < 0,70 post-bronchodilatateur est le critère spirométrique définissant l'obstruction bronchique dans la BPCO selon les recommandations GOLD. C'est un ratio fixe, parfois critiqué car pouvant surestimer la BPCO chez les sujets âgés.",
+        "conceptKey": "pulmonology.copd.spirometry",
+        "sourceRefs": []
+      },
+      "pulm_copd_cause_001": {
+        "acceptedAnswers": ["tabac", "tabagisme"],
+        "explanation": "Le tabagisme est la cause principale de BPCO dans les pays développés, responsable de 85-90% des cas. L'arrêt du tabac est la seule mesure prouvée pour ralentir la progression de la maladie.",
+        "conceptKey": "pulmonology.copd.causes",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Asthme ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'pulm_asthma',
+    'Asthme',
+    2,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Asthme",
+          "body": "L'asthme est une obstruction bronchique réversible avec hyperréactivité bronchique et inflammation. Déclencheurs : allergènes, exercice, froid, AINS. Diagnostic : variabilité du DEP/VEMS, réversibilité aux bronchodilatateurs > 12%. Sévérité : intermittent/léger/modéré/sévère. Traitement : SABA en cas de besoin, CSI en entretien, LABA en add-on. Crise : SABA, O2, corticostéroïdes systémiques.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "pulm_asthma_rescue_001",
+          "question": "Médicament de secours de première intention dans l'asthme ?",
+          "options": ["Les bêta-2 agonistes à courte durée d'action (SABA)", "Les corticostéroïdes inhalés (CSI)", "Les bêta-2 agonistes à longue durée d'action (LABA)", "Les antileucotriènes"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "pulm_asthma_hyper_001",
+          "prompt": "L'asthme est caractérisé par une hyperréactivité ___ avec obstruction réversible.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Asthme terminé",
+          "body": "Tu connais maintenant les mécanismes, le diagnostic et le traitement de l'asthme.",
+          "masteredConcepts": ["pulmonology.asthma.diagnosis", "pulmonology.asthma.treatment"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_pulm2_id;
+
+  IF v_level_pulm2_id IS NULL THEN
+    SELECT id INTO v_level_pulm2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'pulm_asthma';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_pulm2_id,
+    $json${
+      "pulm_asthma_rescue_001": {
+        "correctIndex": 0,
+        "explanation": "Les SABA (bêta-2 agonistes à courte durée d'action, ex : salbutamol) sont les bronchodilatateurs de secours de première intention dans l'asthme. Ils agissent rapidement (début d'action en 5-15 min) et doivent être disponibles en permanence.",
+        "conceptKey": "pulmonology.asthma.treatment",
+        "sourceRefs": []
+      },
+      "pulm_asthma_hyper_001": {
+        "acceptedAnswers": ["bronchique"],
+        "explanation": "L'hyperréactivité bronchique est le mécanisme central de l'asthme : les bronches réagissent de façon exagérée à des stimuli normalement non bronchoconstricteurs (allergènes, air froid, exercice, irritants).",
+        "conceptKey": "pulmonology.asthma.diagnosis",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Pneumonies communautaires ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'pulm_pneumonia',
+    'Pneumonies communautaires',
+    3,
+    'hard',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Pneumonies communautaires",
+          "body": "Les PAC (pneumonies acquises en communauté) : Streptococcus pneumoniae est l'agent le plus fréquent. Symptômes : fièvre, toux, dyspnée, douleur thoracique pleurale. Diagnostic : radio thoracique (opacité alvéolaire). Sévérité : score CURB-65. Traitement : amoxicilline pour les formes légères, C3G + macrolide pour les formes sévères. Atypiques : Mycoplasma, Legionella (légionellose : antigène urinaire, formes graves).",
+          "sourceRefs": []
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "pulm_pneumonia_cc_001",
+          "scenario": "Un homme de 55 ans fumeur se présente avec fièvre à 39.5°C, toux productive avec expectorations rouillées, douleur thoracique droite à l'inspiration et une opacité alvéolaire lobaire droite sur la radiographie. La CRP est à 280 mg/L.",
+          "question": "Quel est l'agent pathogène le plus probable dans cette pneumonie communautaire typique ?",
+          "options": ["Mycoplasma pneumoniae", "Streptococcus pneumoniae", "Legionella pneumophila", "Staphylococcus aureus"],
+          "difficulty": "easy",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "pulm_pneumonia_severity_001",
+          "question": "Score d'évaluation de sévérité des pneumonies communautaires ?",
+          "options": ["Le score de Glasgow", "Le score APACHE II", "Le score CURB-65", "Le score Child-Pugh"],
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Pneumonies communautaires terminées",
+          "body": "Tu connais maintenant les agents pathogènes, le diagnostic et la prise en charge des PAC.",
+          "masteredConcepts": ["pulmonology.pneumonia.pathogens", "pulmonology.pneumonia.severity"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_pulm3_id;
+
+  IF v_level_pulm3_id IS NULL THEN
+    SELECT id INTO v_level_pulm3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'pulm_pneumonia';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_pulm3_id,
+    $json${
+      "pulm_pneumonia_cc_001": {
+        "correctIndex": 1,
+        "explanation": "Streptococcus pneumoniae est l'agent étiologique le plus fréquent des PAC (30-40% des cas). La présentation typique (fièvre élevée, expectorations rouillées/purulentes, opacité lobaire, CRP très élevée) est caractéristique du pneumocoque. Mycoplasma donne plutôt un tableau atypique.",
+        "conceptKey": "pulmonology.pneumonia.pathogens",
+        "sourceRefs": []
+      },
+      "pulm_pneumonia_severity_001": {
+        "correctIndex": 2,
+        "explanation": "Le score CURB-65 évalue la sévérité des PAC : Confusion, Urée > 7 mmol/L, fréquence Respiratoire ≥ 30/min, pression artérielle Basse (PAS < 90 ou PAD ≤ 60 mmHg), âge ≥ 65 ans. Score ≥ 3 : hospitalisation en soins intensifs.",
+        "conceptKey": "pulmonology.pneumonia.severity",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('gastroenterology', 'Gastro-Entérologie', 'Gastroenterology', '🫃', '#6d4c41', 'Maladies du tube digestif, du foie et du pancréas.', 25, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, published)
+VALUES ('gastroenterology', 'digestive_diseases', 'Maladies digestives', 'Ulcère, MICI, hépatites et pancréatite.', '🫃', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_gastro1_id uuid;
+  v_level_gastro2_id uuid;
+  v_level_gastro3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'gastroenterology' AND slug = 'digestive_diseases';
+
+  -- ---- Niveau 1: Ulcère peptique ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'gastro_ulcer',
+    'Ulcère peptique',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Ulcère peptique",
+          "body": "L'ulcère peptique peut être gastrique ou duodénal. H. pylori est la cause principale (90% des ulcères duodénaux), suivi des AINS. Ulcère duodénal : douleur épigastrique soulagée par l'alimentation. Ulcère gastrique : douleur aggravée par l'alimentation. Diagnostic : endoscopie. Traitement : IPP + éradication H. pylori (amoxicilline + clarithromycine). Complications : hémorragie, perforation, sténose.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "gastro_ulcer_cause_001",
+          "question": "Principale cause d'ulcère duodénal ?",
+          "options": ["Les AINS (anti-inflammatoires non stéroïdiens)", "Helicobacter pylori", "Le stress (ulcère de stress)", "L'alcool"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "gastro_ulcer_treatment_001",
+          "prompt": "Le traitement d'éradication d'H. pylori associe des ___ aux antibiotiques.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Ulcère peptique terminé",
+          "body": "Tu connais maintenant les causes, le diagnostic et le traitement de l'ulcère peptique.",
+          "masteredConcepts": ["gastroenterology.ulcer.h_pylori", "gastroenterology.ulcer.treatment"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_gastro1_id;
+
+  IF v_level_gastro1_id IS NULL THEN
+    SELECT id INTO v_level_gastro1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'gastro_ulcer';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_gastro1_id,
+    $json${
+      "gastro_ulcer_cause_001": {
+        "correctIndex": 1,
+        "explanation": "Helicobacter pylori est responsable d'environ 90% des ulcères duodénaux et 70-80% des ulcères gastriques. Cette bactérie Gram-négative colonise la muqueuse gastrique et induit une inflammation chronique favorisant l'ulcération.",
+        "conceptKey": "gastroenterology.ulcer.h_pylori",
+        "sourceRefs": []
+      },
+      "gastro_ulcer_treatment_001": {
+        "acceptedAnswers": ["IPP", "inhibiteurs de la pompe à protons"],
+        "explanation": "Le traitement d'éradication d'H. pylori associe systématiquement des IPP (inhibiteurs de la pompe à protons) à deux antibiotiques (amoxicilline + clarithromycine en première intention). Les IPP réduisent l'acidité gastrique et potentialisent l'effet des antibiotiques.",
+        "conceptKey": "gastroenterology.ulcer.treatment",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: MICI ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'gastro_ibd',
+    'Maladies inflammatoires chroniques intestinales',
+    2,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "MICI : Crohn et RCH",
+          "body": "MICI : Crohn (atteinte transmurale, tout le tube digestif, lésions en saut, aspect en pavé, fistules) vs RCH (atteinte muqueuse, continue, rectum → côlon, diarrhée sanglante). Les deux : évolution par poussées. Complications : cancer colorectal (RCH > Crohn), mégacôlon toxique. Traitement : 5-ASA, corticostéroïdes, immunosuppresseurs, biologiques (anti-TNF).",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "gastro_ibd_crohn_001",
+          "question": "Caractéristique différenciant la maladie de Crohn de la rectocolite hémorragique ?",
+          "options": ["L'atteinte transmurale et discontinue (lésions en saut) de la maladie de Crohn", "L'atteinte exclusive du côlon dans la maladie de Crohn", "La diarrhée sanglante exclusive à la maladie de Crohn", "L'atteinte rectale obligatoire dans la maladie de Crohn"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "gastro_ibd_rch_001",
+          "prompt": "La ___ hémorragique touche de façon continue la muqueuse du rectum et du côlon.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "MICI terminées",
+          "body": "Tu connais maintenant les différences entre la maladie de Crohn et la RCH.",
+          "masteredConcepts": ["gastroenterology.ibd.crohn", "gastroenterology.ibd.uc"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_gastro2_id;
+
+  IF v_level_gastro2_id IS NULL THEN
+    SELECT id INTO v_level_gastro2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'gastro_ibd';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_gastro2_id,
+    $json${
+      "gastro_ibd_crohn_001": {
+        "correctIndex": 0,
+        "explanation": "La maladie de Crohn se distingue par une atteinte transmurale (toutes les couches de la paroi intestinale) et discontinue (lésions en saut avec zones saines intercalées). Elle peut toucher tout le tube digestif de la bouche à l'anus, contrairement à la RCH limitée au côlon.",
+        "conceptKey": "gastroenterology.ibd.crohn",
+        "sourceRefs": []
+      },
+      "gastro_ibd_rch_001": {
+        "acceptedAnswers": ["rectocolite"],
+        "explanation": "La rectocolite hémorragique (RCH) est caractérisée par une atteinte inflammatoire continue et exclusive de la muqueuse colorectale, débutant toujours par le rectum et remontant de façon continue vers le côlon. Elle n'atteint jamais l'intestin grêle (sauf backwash iléitis).",
+        "conceptKey": "gastroenterology.ibd.uc",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Cirrhose ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'gastro_liver',
+    'Cirrhose hépatique',
+    3,
+    'hard',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Cirrhose hépatique",
+          "body": "La cirrhose est une fibrose remplaçant l'architecture hépatique normale. Causes : alcool (1ère cause en France), virales (VHB/VHC), NASH. Cirrhose compensée vs décompensée (ascite, ictère, encéphalopathie, hémorragie variqueuse). Scores : Child-Pugh (A/B/C) et MELD. Risque de carcinome hépatocellulaire.",
+          "sourceRefs": []
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "gastro_liver_cc_001",
+          "scenario": "Un homme de 52 ans, éthylique chronique, présente une ascite de grande abondance, un ictère à 80 µmol/L, une encéphalopathie de grade II et un TP à 40%. L'échographie montre un foie dysmorphique avec une rate à 18 cm.",
+          "question": "Quel est le stade de la cirrhose selon la classification de Child-Pugh ?",
+          "options": ["Child-Pugh A (5-6 points)", "Child-Pugh B (7-9 points)", "Child-Pugh C (10-15 points)", "Cirrhose non classifiable"],
+          "difficulty": "hard",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "gastro_liver_complication_001",
+          "question": "Complication la plus grave de la cirrhose en urgence ?",
+          "options": ["L'ascite réfractaire", "L'hémorragie digestive par rupture de varices œsophagiennes", "L'encéphalopathie hépatique", "Le syndrome hépatorénal"],
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Cirrhose terminée",
+          "body": "Tu connais maintenant les causes, la classification et les complications de la cirrhose.",
+          "masteredConcepts": ["gastroenterology.cirrhosis.child_pugh", "gastroenterology.cirrhosis.complications"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_gastro3_id;
+
+  IF v_level_gastro3_id IS NULL THEN
+    SELECT id INTO v_level_gastro3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'gastro_liver';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_gastro3_id,
+    $json${
+      "gastro_liver_cc_001": {
+        "correctIndex": 2,
+        "explanation": "Ce patient cumule 3 critères de décompensation sévère : ascite de grande abondance (3 pts), ictère à 80 µmol/L (3 pts), encéphalopathie de grade II (3 pts) et TP à 40% (3 pts). Le score Child-Pugh est ≥ 10 points, correspondant au stade C (10-15 pts), de pronostic le plus sévère.",
+        "conceptKey": "gastroenterology.cirrhosis.child_pugh",
+        "sourceRefs": []
+      },
+      "gastro_liver_complication_001": {
+        "correctIndex": 1,
+        "explanation": "L'hémorragie digestive par rupture de varices œsophagiennes est la complication aiguë la plus grave de la cirrhose, avec une mortalité de 15-20% par épisode. Elle constitue une urgence vitale nécessitant une prise en charge immédiate (drogues vasoactives, endoscopie, antibioprophylaxie).",
+        "conceptKey": "gastroenterology.cirrhosis.complications",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
