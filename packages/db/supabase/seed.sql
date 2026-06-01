@@ -7988,3 +7988,509 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Seed: Néphrologie subject, renal_function chapter, 3 levels
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('nephrology', 'Néphrologie', 'Nephrology', '🫘', '#26a69a', 'Maladies des reins et des voies urinaires.', 22, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, published)
+VALUES ('nephrology', 'renal_function', 'Fonction rénale', 'Physiologie rénale, insuffisance rénale et syndromes néphrologiques.', '🫘', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_neph1_id uuid;
+  v_level_neph2_id uuid;
+  v_level_neph3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'nephrology' AND slug = 'renal_function';
+
+  -- ---- Niveau 1: Physiologie rénale ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'neph_physiology',
+    'Physiologie rénale',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Physiologie rénale",
+          "body": "Le rein assure la filtration glomérulaire (DFG ~120 mL/min), la réabsorption (glucose, Na+, eau), la sécrétion et la régulation de la PA via le système RAAS. Il produit l'érythropoïétine (EPO) stimulant la production de globules rouges et active la vitamine D. Le néphron est l'unité fonctionnelle du rein. Le DFG est estimé par les formules CKD-EPI ou Cockcroft-Gault.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "neph_epo_001",
+          "question": "Hormone produite par le rein pour stimuler la production de globules rouges ?",
+          "options": ["L'aldostérone", "L'érythropoïétine (EPO)", "L'angiotensine II", "La rénine"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "neph_gfr_001",
+          "prompt": "Le débit de filtration glomérulaire (DFG) normal est d'environ ___ mL/min.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Physiologie rénale terminée",
+          "body": "Tu connais maintenant les fonctions essentielles du rein.",
+          "masteredConcepts": ["nephrology.physiology.gfr", "nephrology.physiology.epo"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_neph1_id;
+
+  IF v_level_neph1_id IS NULL THEN
+    SELECT id INTO v_level_neph1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'neph_physiology';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_neph1_id,
+    $json${
+      "neph_epo_001": {
+        "correctIndex": 1,
+        "explanation": "L'érythropoïétine (EPO) est une hormone produite par les cellules péritubulaires du rein en réponse à l'hypoxie. Elle stimule la production de globules rouges dans la moelle osseuse.",
+        "conceptKey": "nephrology.physiology.epo",
+        "sourceRefs": []
+      },
+      "neph_gfr_001": {
+        "acceptedAnswers": ["120", "100-120"],
+        "explanation": "Le débit de filtration glomérulaire (DFG) normal est d'environ 120 mL/min/1,73 m². Il est estimé par les formules CKD-EPI ou Cockcroft-Gault.",
+        "conceptKey": "nephrology.physiology.gfr",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Insuffisance rénale aiguë ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'neph_aki',
+    'Insuffisance rénale aiguë',
+    2,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Insuffisance rénale aiguë",
+          "body": "L'IRA est définie par une élévation brutale de la créatinine. Critères KDIGO : créatinine ×1,5 en 7 jours ou +26,5 µmol/L en 48h ou diurèse <0,5 mL/kg/h pendant 6h. Causes : prérénale (déshydratation, choc), intrinsèque (NTA, glomérulonéphrite), postrénale (obstruction). Bilan : ECBU, ionogramme, créatinine. Traitement de l'IRA prérénale : expansion hydrique.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "neph_aki_cause_001",
+          "question": "Cause la plus fréquente d'insuffisance rénale aiguë en réanimation ?",
+          "options": ["La nécrose tubulaire aiguë (NTA) pré-rénale", "La glomérulonéphrite aiguë", "L'obstruction urétérale bilatérale", "La pyélonéphrite aiguë"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "neph_aki_treatment_001",
+          "prompt": "L'insuffisance rénale aiguë pré-rénale est traitée en priorité par une ___ hydrique.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "IRA terminée",
+          "body": "Tu connais maintenant les critères diagnostiques et les causes de l'insuffisance rénale aiguë.",
+          "masteredConcepts": ["nephrology.aki.kdigo", "nephrology.aki.prerenal"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_neph2_id;
+
+  IF v_level_neph2_id IS NULL THEN
+    SELECT id INTO v_level_neph2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'neph_aki';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_neph2_id,
+    $json${
+      "neph_aki_cause_001": {
+        "correctIndex": 0,
+        "explanation": "En réanimation, la nécrose tubulaire aiguë (NTA) d'origine pré-rénale (choc, sepsis, hypovolémie) est la cause la plus fréquente d'IRA. Elle résulte d'une ischémie tubulaire prolongée.",
+        "conceptKey": "nephrology.aki.prerenal",
+        "sourceRefs": []
+      },
+      "neph_aki_treatment_001": {
+        "acceptedAnswers": ["expansion", "remplissage"],
+        "explanation": "L'IRA pré-rénale est due à une hypoperfusion rénale. Le traitement prioritaire est la restauration de la volémie par expansion hydrique (remplissage vasculaire).",
+        "conceptKey": "nephrology.aki.treatment",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Maladie rénale chronique ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'neph_ckd',
+    'Maladie rénale chronique',
+    3,
+    'hard',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Maladie rénale chronique",
+          "body": "La MRC est définie par un DFG <60 mL/min/1,73 m² pendant plus de 3 mois. 5 stades G1-G5. Causes : néphropathie diabétique (#1), néphrosclérose hypertensive (#2). Complications : anémie (↓EPO), hyperkaliémie, acidose métabolique, hypertension, ostéodystrophie rénale (↓vitamine D). Traitement : bloqueurs du SRAA, contrôle tensionnel, dialyse au stade G5.",
+          "sourceRefs": []
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "neph_ckd_stage_001",
+          "scenario": "Un homme de 60 ans diabétique depuis 15 ans présente une créatinine à 250 µmol/L (DFG estimé à 25 mL/min/1.73m²), une protéinurie à 2 g/24h, une anémie normochrome normocytaire (Hb 9 g/dL) et une pression artérielle à 155/90 mmHg.",
+          "question": "Quel stade de maladie rénale chronique présente ce patient ?",
+          "options": ["Stade G1 (DFG ≥90)", "Stade G3b (DFG 30-44)", "Stade G4 (DFG 15-29)", "Stade G5 (DFG <15)"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "neph_ckd_cause_001",
+          "question": "Cause numéro 1 de maladie rénale chronique dans les pays développés ?",
+          "options": ["La glomérulonéphrite chronique", "La néphropathie diabétique", "La néphrosclérose hypertensive", "La polykystose rénale"],
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "MRC terminée",
+          "body": "Tu connais maintenant les stades et la prise en charge de la maladie rénale chronique.",
+          "masteredConcepts": ["nephrology.ckd.staging", "nephrology.ckd.causes"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_neph3_id;
+
+  IF v_level_neph3_id IS NULL THEN
+    SELECT id INTO v_level_neph3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'neph_ckd';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_neph3_id,
+    $json${
+      "neph_ckd_stage_001": {
+        "correctIndex": 2,
+        "explanation": "Un DFG à 25 mL/min/1,73 m² correspond au stade G4 (DFG 15-29). Ce patient présente également une anémie rénale (↓EPO), une hypertension et une protéinurie, complications classiques de la MRC à ce stade.",
+        "conceptKey": "nephrology.ckd.staging",
+        "sourceRefs": []
+      },
+      "neph_ckd_cause_001": {
+        "correctIndex": 1,
+        "explanation": "La néphropathie diabétique est la première cause de maladie rénale chronique dans les pays développés, devant la néphrosclérose hypertensive. Elle est responsable d'environ 30 à 40 % des cas d'insuffisance rénale terminale.",
+        "conceptKey": "nephrology.ckd.causes",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Seed: Hématologie subject, blood_disorders chapter, 3 levels
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('hematology', 'Hématologie', 'Hematology', '🩸', '#c62828', 'Maladies du sang : anémies, leucémies et troubles de la coagulation.', 23, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, published)
+VALUES ('hematology', 'blood_disorders', 'Troubles sanguins', 'Anémies, syndromes myéloprolifératifs et coagulopathies.', '🩸', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_hema1_id uuid;
+  v_level_hema2_id uuid;
+  v_level_hema3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'hematology' AND slug = 'blood_disorders';
+
+  -- ---- Niveau 1: Anémies ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'hema_anemia',
+    'Anémies',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Anémies",
+          "body": "L'anémie est définie par une Hb <12 g/dL chez la femme et <13 g/dL chez l'homme. Classification par VGM : microcytaire (carence en fer, thalassémie), normocytaire (IRA, hémolyse, aplasie), macrocytaire (carence B12/folates, alcool). La carence en fer est la cause la plus fréquente dans le monde. Symptômes : fatigue, pâleur, dyspnée, tachycardie.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "hema_anemia_cause_001",
+          "question": "Cause mondiale la plus fréquente d'anémie ?",
+          "options": ["La carence en fer (anémie ferriprive)", "La carence en vitamine B12", "La thalassémie", "L'hémolyse auto-immune"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "hema_anemia_b12_001",
+          "prompt": "L'anémie par carence en vitamine B12 est de type ___ (augmentation du VGM).",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Anémies terminées",
+          "body": "Tu connais maintenant la classification et les causes des anémies.",
+          "masteredConcepts": ["hematology.anemia.iron_deficiency", "hematology.anemia.classification"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_hema1_id;
+
+  IF v_level_hema1_id IS NULL THEN
+    SELECT id INTO v_level_hema1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'hema_anemia';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_hema1_id,
+    $json${
+      "hema_anemia_cause_001": {
+        "correctIndex": 0,
+        "explanation": "La carence en fer (anémie ferriprive) est la cause la plus fréquente d'anémie dans le monde, touchant environ 2 milliards de personnes. Elle entraîne une anémie microcytaire hypochrome.",
+        "conceptKey": "hematology.anemia.iron_deficiency",
+        "sourceRefs": []
+      },
+      "hema_anemia_b12_001": {
+        "acceptedAnswers": ["macrocytaire"],
+        "explanation": "La carence en vitamine B12 entraîne une anémie macrocytaire (VGM augmenté >100 fL) par défaut de synthèse de l'ADN dans les précurseurs érythroïdes. Elle s'associe souvent à des signes neurologiques.",
+        "conceptKey": "hematology.anemia.macrocytic",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Coagulation ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'hema_coagulation',
+    'Coagulation et hémostase',
+    2,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Coagulation et hémostase",
+          "body": "L'hémostase comprend : l'hémostase primaire (clou plaquettaire) → secondaire (cascade de coagulation, caillot de fibrine) → fibrinolyse. Le TP/INR explore la voie extrinsèque (facteur VII, vitamine K dépendant). Le TCA explore la voie intrinsèque (facteurs VIII/IX/XI/XII). La warfarine est un anti-vitamine K surveillé par l'INR. L'héparine active l'antithrombine.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "hema_coag_inr_001",
+          "question": "Paramètre biologique surveillé sous warfarine (anti-vitamine K) ?",
+          "options": ["Le TCA (temps de céphaline activée)", "Le fibrinogène", "L'INR (International Normalized Ratio)", "Le temps de saignement"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "hema_coag_heparin_001",
+          "prompt": "L'héparine agit en activant l'___, inhibiteur naturel de la coagulation.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Coagulation terminée",
+          "body": "Tu connais maintenant les bases de l'hémostase et la surveillance des anticoagulants.",
+          "masteredConcepts": ["hematology.coagulation.inr", "hematology.coagulation.heparin"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_hema2_id;
+
+  IF v_level_hema2_id IS NULL THEN
+    SELECT id INTO v_level_hema2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'hema_coagulation';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_hema2_id,
+    $json${
+      "hema_coag_inr_001": {
+        "correctIndex": 2,
+        "explanation": "L'INR (International Normalized Ratio) est le paramètre de surveillance des anti-vitamines K (warfarine, acénocoumarol). Il explore la voie extrinsèque de la coagulation. La cible thérapeutique est généralement entre 2 et 3.",
+        "conceptKey": "hematology.coagulation.inr",
+        "sourceRefs": []
+      },
+      "hema_coag_heparin_001": {
+        "acceptedAnswers": ["antithrombine"],
+        "explanation": "L'héparine (standard et de bas poids moléculaire) exerce son effet anticoagulant en se fixant à l'antithrombine III, potentialisant son effet inhibiteur sur la thrombine et le facteur Xa.",
+        "conceptKey": "hematology.coagulation.heparin",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Leucémies et lymphomes ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'hema_leukemia',
+    'Leucémies et lymphomes',
+    3,
+    'hard',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Leucémies et lymphomes",
+          "body": "Leucémies : aiguës (LAM/LAL, blastes >20%, urgence) vs chroniques (LMC/LLC, évolution lente). Lymphomes : Hodgkin (cellules de Reed-Sternberg, âge bimodal, guérissable) vs Non-Hodgkin (plus fréquent, hétérogène). Myélome multiple : tumeur plasmocytaire, critères CRAB : hyperCalcémie, insuffisance Rénale, Anémie, lésions osseuses (Bone).",
+          "sourceRefs": []
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "hema_hodgkin_cc_001",
+          "scenario": "Un homme de 25 ans consulte pour fièvre persistante, sueurs nocturnes et amaigrissement de 8 kg en 2 mois. L'examen trouve des adénopathies cervicales bilatérales non douloureuses de 3 cm et une splénomégalie. La biopsie ganglionnaire montre des cellules de Reed-Sternberg.",
+          "question": "Quel diagnostic correspond à ce tableau clinique ?",
+          "options": ["Leucémie aiguë lymphoblastique", "Lymphome de Hodgkin", "Lymphome non hodgkinien diffus à grandes cellules B", "Sarcoïdose"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "hema_hodgkin_cell_001",
+          "question": "Cellule histologique caractéristique du lymphome de Hodgkin ?",
+          "options": ["La cellule de Reed-Sternberg", "Le lymphocyte B malin", "Le myéloblaste", "Le plasmocyte"],
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Leucémies et lymphomes terminés",
+          "body": "Tu connais maintenant les principales hémopathies malignes.",
+          "masteredConcepts": ["hematology.lymphoma.hodgkin", "hematology.leukemia.classification"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_hema3_id;
+
+  IF v_level_hema3_id IS NULL THEN
+    SELECT id INTO v_level_hema3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'hema_leukemia';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_hema3_id,
+    $json${
+      "hema_hodgkin_cc_001": {
+        "correctIndex": 1,
+        "explanation": "La présence de cellules de Reed-Sternberg à la biopsie ganglionnaire est pathognomonique du lymphome de Hodgkin. Le tableau (jeune homme, ADP cervicales, signes B : fièvre, sueurs nocturnes, amaigrissement >10 %) est typique.",
+        "conceptKey": "hematology.lymphoma.hodgkin",
+        "sourceRefs": []
+      },
+      "hema_hodgkin_cell_001": {
+        "correctIndex": 0,
+        "explanation": "La cellule de Reed-Sternberg est la cellule géante binucléée caractéristique du lymphome de Hodgkin. Sa présence à la biopsie ganglionnaire est nécessaire au diagnostic.",
+        "conceptKey": "hematology.lymphoma.hodgkin",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
