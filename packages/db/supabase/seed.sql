@@ -6980,3 +6980,509 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- Seed: Ophtalmologie subject, eye_anatomy_diseases chapter, 3 levels
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('ophthalmology', 'Ophtalmologie', 'Ophthalmology', '👁️', '#00bcd4', 'Maladies de l''œil et de la vision.', 19, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, published)
+VALUES ('ophthalmology', 'eye_anatomy_diseases', 'Anatomie et maladies oculaires', 'Structure de l''œil et principales pathologies.', '👁️', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_ophtho1_id uuid;
+  v_level_ophtho2_id uuid;
+  v_level_ophtho3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'ophthalmology' AND slug = 'eye_anatomy_diseases';
+
+  -- ---- Niveau 1: Anatomie oculaire ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'ophtho_anatomy',
+    'Anatomie oculaire',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Anatomie oculaire",
+          "body": "La cornée est transparente (réfraction). L'iris est coloré et contrôle le diamètre pupillaire. Le cristallin assure l'accommodation (mise au point). La rétine contient les photorécepteurs : bâtonnets (vision nocturne/scotopique) et cônes (vision des couleurs et centrale). Le nerf optique (II) transmet l'information visuelle. La fovéa est la zone de vision la plus précise ; la macula l'entoure.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "ophtho_cones_001",
+          "question": "Cellules rétiniennes responsables de la vision des couleurs ?",
+          "options": ["Les bâtonnets", "Les cônes", "Les cellules ganglionnaires", "Les cellules de Müller"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "ophtho_fovea_001",
+          "prompt": "La ___ est la zone de la rétine où la vision est la plus précise.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Anatomie oculaire terminée",
+          "body": "Tu connais maintenant les structures fondamentales de l'œil.",
+          "masteredConcepts": ["ophthalmology.anatomy.fovea", "ophthalmology.anatomy.cones"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_ophtho1_id;
+
+  IF v_level_ophtho1_id IS NULL THEN
+    SELECT id INTO v_level_ophtho1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'ophtho_anatomy';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_ophtho1_id,
+    $json${
+      "ophtho_cones_001": {
+        "correctIndex": 1,
+        "explanation": "Les cônes sont les photorécepteurs responsables de la vision des couleurs et de la vision centrale (photopique). Les bâtonnets assurent la vision nocturne (scotopique).",
+        "conceptKey": "ophthalmology.anatomy.cones",
+        "sourceRefs": []
+      },
+      "ophtho_fovea_001": {
+        "acceptedAnswers": ["fovéa", "fovea", "macula"],
+        "explanation": "La fovéa est la zone centrale de la macula où la densité de cônes est maximale, permettant la vision la plus précise.",
+        "conceptKey": "ophthalmology.anatomy.fovea",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Réfraction et glaucome ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'ophtho_refraction',
+    'Réfraction et glaucome',
+    2,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Défauts de réfraction et glaucome",
+          "body": "Myopie : globe trop long → flou de loin → verre concave (divergent). Hypermétropie : globe trop court → flou de près → verre convexe (convergent). Astigmatisme : cornée irrégulière → distorsion. Presbytie : rigidité cristallinienne liée à l'âge. Glaucome : augmentation de la pression intra-oculaire (PIO) → lésion du nerf optique → scotomes (amputation du champ visuel). PIO normale < 21 mmHg.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "ophtho_myopia_001",
+          "question": "Défaut de réfraction corrigé par un verre concave (divergent) ?",
+          "options": ["La myopie", "L'hypermétropie", "L'astigmatisme", "La presbytie"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "ophtho_glaucoma_001",
+          "prompt": "Le glaucome est causé par une augmentation de la pression ___ oculaire.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Réfraction et glaucome terminés",
+          "body": "Tu maîtrises maintenant les défauts de réfraction et le mécanisme du glaucome.",
+          "masteredConcepts": ["ophthalmology.refraction.myopia", "ophthalmology.glaucoma.iop"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_ophtho2_id;
+
+  IF v_level_ophtho2_id IS NULL THEN
+    SELECT id INTO v_level_ophtho2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'ophtho_refraction';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_ophtho2_id,
+    $json${
+      "ophtho_myopia_001": {
+        "correctIndex": 0,
+        "explanation": "La myopie est due à un globe oculaire trop long : les rayons convergent en avant de la rétine → flou de loin. Elle est corrigée par un verre concave (divergent).",
+        "conceptKey": "ophthalmology.refraction.myopia",
+        "sourceRefs": []
+      },
+      "ophtho_glaucoma_001": {
+        "acceptedAnswers": ["intra-oculaire", "intraoculaire"],
+        "explanation": "Le glaucome est défini par une neuropathie optique le plus souvent liée à une élévation de la pression intra-oculaire (PIO > 21 mmHg).",
+        "conceptKey": "ophthalmology.glaucoma.iop",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Urgences ophtalmologiques ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'ophtho_emergencies',
+    'Urgences ophtalmologiques',
+    3,
+    'hard',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Urgences ophtalmologiques",
+          "body": "Glaucome aigu par fermeture de l'angle : douleur oculaire brutale, halos colorés autour des lumières, nausées/vomissements, œil rouge, cornée trouble, pupille en semi-mydriase fixe. Occlusion de l'artère centrale de la rétine (OACR) : baisse visuelle monoculaire brutale et indolore, tache rouge cerise au fond d'œil. Décollement de rétine : photopsies, corps flottants (myodésopsies), voile/rideau. Brûlures chimiques : irrigation abondante immédiate en urgence absolue.",
+          "sourceRefs": []
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "ophtho_acute_glaucoma_cc_001",
+          "scenario": "Un homme de 65 ans se présente aux urgences avec une douleur oculaire droite intense d'installation brutale, des céphalées, des nausées, et voit des halos autour des lumières. L'œil est rouge, la cornée est trouble, et la pupille est en semi-mydriase fixe.",
+          "question": "Quel diagnostic ophtalmologique est le plus probable ?",
+          "options": ["Conjonctivite aiguë", "Kératite infectieuse", "Glaucome aigu par fermeture de l'angle", "Occlusion de l'artère centrale de la rétine"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "ophtho_oacr_001",
+          "question": "Signe caractéristique de l'occlusion de l'artère centrale de la rétine ?",
+          "options": ["Halos colorés autour des lumières", "Tache rouge cerise (cherry red spot) au fond d'œil", "Pupille en semi-mydriase fixe", "Photopsies et corps flottants"],
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Urgences ophtalmologiques terminées",
+          "body": "Tu sais maintenant reconnaître les principales urgences ophtalmologiques.",
+          "masteredConcepts": ["ophthalmology.emergencies.acute_glaucoma", "ophthalmology.emergencies.oacr"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_ophtho3_id;
+
+  IF v_level_ophtho3_id IS NULL THEN
+    SELECT id INTO v_level_ophtho3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'ophtho_emergencies';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_ophtho3_id,
+    $json${
+      "ophtho_acute_glaucoma_cc_001": {
+        "correctIndex": 2,
+        "explanation": "Le glaucome aigu par fermeture de l'angle se manifeste par une douleur oculaire intense et brutale, des halos colorés, des nausées, un œil rouge, une cornée œdématiée trouble et une pupille en semi-mydriase aréactive. C'est une urgence ophtalmologique.",
+        "conceptKey": "ophthalmology.emergencies.acute_glaucoma",
+        "sourceRefs": []
+      },
+      "ophtho_oacr_001": {
+        "correctIndex": 1,
+        "explanation": "L'occlusion de l'artère centrale de la rétine (OACR) provoque une ischémie rétinienne avec un aspect blanchâtre de la rétine et une tache rouge cerise (cherry red spot) au niveau de la macula, qui reste vascularisée par la choriocapillaire.",
+        "conceptKey": "ophthalmology.emergencies.oacr",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- Seed: Rhumatologie subject, joint_diseases chapter, 3 levels
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('rheumatology', 'Rhumatologie', 'Rheumatology', '🦴', '#795548', 'Maladies des articulations, des os et des tissus conjonctifs.', 20, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, published)
+VALUES ('rheumatology', 'joint_diseases', 'Maladies articulaires', 'Arthrose, polyarthrite rhumatoïde et spondylarthrite.', '🦴', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_rheum1_id uuid;
+  v_level_rheum2_id uuid;
+  v_level_rheum3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters
+   WHERE subject_id = 'rheumatology' AND slug = 'joint_diseases';
+
+  -- ---- Niveau 1: Arthrose ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'rheum_osteoarthritis',
+    'Arthrose',
+    1,
+    'easy',
+    100,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Arthrose",
+          "body": "L'arthrose est une maladie dégénérative du cartilage articulaire avec formation d'ostéophytes (becs de perroquet). Facteurs de risque : âge, obésité, surcharge mécanique, traumatismes. Radiographie : pincement de l'interligne articulaire, ostéophytes, sclérose sous-chondrale. Symptômes : douleur mécanique (aggravée à l'effort, soulagée au repos), raideur matinale < 30 min. Traitement : paracétamol, AINS, kinésithérapie, prothèse articulaire.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "rheum_oa_pain_001",
+          "question": "Caractère de la douleur dans l'arthrose ?",
+          "options": ["Mécanique (aggravée à l'effort, soulagée au repos)", "Inflammatoire (prédominance nocturne, raideur matinale > 1h)", "Neuropathique (brûlures, paresthésies)", "Vasculaire (claudication intermittente)"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "rheum_oa_cartilage_001",
+          "prompt": "L'arthrose se caractérise par une destruction du ___.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Arthrose terminée",
+          "body": "Tu connais maintenant les caractéristiques de l'arthrose.",
+          "masteredConcepts": ["rheumatology.osteoarthritis.mechanical_pain", "rheumatology.osteoarthritis.cartilage"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_rheum1_id;
+
+  IF v_level_rheum1_id IS NULL THEN
+    SELECT id INTO v_level_rheum1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'rheum_osteoarthritis';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_rheum1_id,
+    $json${
+      "rheum_oa_pain_001": {
+        "correctIndex": 0,
+        "explanation": "La douleur arthrosique est de type mécanique : elle est déclenchée et aggravée par l'effort physique, et soulagée par le repos. La raideur matinale est courte (< 30 min). C'est le contraire de la douleur inflammatoire.",
+        "conceptKey": "rheumatology.osteoarthritis.mechanical_pain",
+        "sourceRefs": []
+      },
+      "rheum_oa_cartilage_001": {
+        "acceptedAnswers": ["cartilage"],
+        "explanation": "L'arthrose est une maladie dégénérative caractérisée par la destruction progressive du cartilage articulaire, entraînant un pincement de l'interligne articulaire visible à la radiographie.",
+        "conceptKey": "rheumatology.osteoarthritis.cartilage",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Polyarthrite rhumatoïde ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'rheum_ra',
+    'Polyarthrite rhumatoïde',
+    2,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Polyarthrite rhumatoïde",
+          "body": "La polyarthrite rhumatoïde (PR) est une maladie auto-immune touchant la synoviale → inflammation → destruction articulaire. Prédominance féminine, 40-60 ans. Atteinte bilatérale et symétrique des petites articulations (mains, poignets, pieds). Raideur matinale > 1h. Sérologie : facteur rhumatoïde (FR) et anticorps anti-CCP (anti-peptides citrullinés cycliques). Radiographie : érosions marginales, ostéoporose péri-articulaire. Traitement : DMARDs (méthotrexate en première ligne), biologiques (anti-TNF).",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "rheum_ra_anticcp_001",
+          "question": "Anticorps le plus spécifique de la polyarthrite rhumatoïde ?",
+          "options": ["Anticorps anti-nucléaires (ANA)", "Facteur rhumatoïde (FR)", "Anti-CCP (anti-peptides citrullinés cycliques)", "Anticorps anti-ADN natif"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "rheum_ra_inflammatory_001",
+          "prompt": "La douleur de la polyarthrite rhumatoïde est de caractère ___ (plus intense le matin).",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Polyarthrite rhumatoïde terminée",
+          "body": "Tu connais maintenant les critères diagnostiques et le traitement de la polyarthrite rhumatoïde.",
+          "masteredConcepts": ["rheumatology.ra.anti_ccp", "rheumatology.ra.inflammatory_pain"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_rheum2_id;
+
+  IF v_level_rheum2_id IS NULL THEN
+    SELECT id INTO v_level_rheum2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'rheum_ra';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_rheum2_id,
+    $json${
+      "rheum_ra_anticcp_001": {
+        "correctIndex": 2,
+        "explanation": "Les anticorps anti-CCP (anti-peptides citrullinés cycliques) sont les plus spécifiques de la polyarthrite rhumatoïde (spécificité ~96%). Ils peuvent être présents avant l'apparition des symptômes et ont une valeur pronostique.",
+        "conceptKey": "rheumatology.ra.anti_ccp",
+        "sourceRefs": []
+      },
+      "rheum_ra_inflammatory_001": {
+        "acceptedAnswers": ["inflammatoire"],
+        "explanation": "La douleur de la PR est de caractère inflammatoire : prédominance nocturne et matinale, raideur matinale prolongée (> 1h), soulagée par l'activité physique et les anti-inflammatoires.",
+        "conceptKey": "rheumatology.ra.inflammatory_pain",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Spondylarthrites ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'rheum_spondylo',
+    'Spondylarthrites',
+    3,
+    'hard',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Spondylarthrites",
+          "body": "Les spondylarthropathies sont associées au gène HLA-B27. La spondylarthrite ankylosante (SA) est axiale avec sacro-iléite et colonne en bambou. Autres formes : arthrite psoriasique, arthrite réactionnelle. Douleur lombaire inflammatoire : début < 45 ans, insidieux, > 3 mois, raideur matinale, améliorée à l'exercice, aggravée au repos. Enthésite (inflammation des insertions tendineuses), uvéite antérieure aiguë.",
+          "sourceRefs": []
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "rheum_spondylo_cc_001",
+          "scenario": "Un homme de 28 ans consulte pour des douleurs lombaires évoluant depuis 6 mois, prédominant la nuit et le matin avec une raideur matinale de 2 heures, s'améliorant à l'activité physique. La sacro-iléite est visible à l'IRM. HLA-B27 positif.",
+          "question": "Quel diagnostic correspond à ce tableau ?",
+          "options": ["Hernie discale L4-L5", "Spondylarthrite ankylosante", "Arthrose lombaire", "Fibromyalgie"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "rheum_hlab27_001",
+          "question": "Gène HLA associé aux spondylarthropathies ?",
+          "options": ["HLA-B27", "HLA-DR4", "HLA-B51", "HLA-DQ2"],
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Spondylarthrites terminées",
+          "body": "Tu connais maintenant les caractéristiques des spondylarthropathies.",
+          "masteredConcepts": ["rheumatology.spondylo.hla_b27", "rheumatology.spondylo.ankylosing_spondylitis"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_rheum3_id;
+
+  IF v_level_rheum3_id IS NULL THEN
+    SELECT id INTO v_level_rheum3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'rheum_spondylo';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_rheum3_id,
+    $json${
+      "rheum_spondylo_cc_001": {
+        "correctIndex": 1,
+        "explanation": "Le tableau associant douleurs lombaires inflammatoires (raideur matinale > 1h, amélioration à l'exercice), sacro-iléite à l'IRM et HLA-B27 positif chez un homme jeune est caractéristique de la spondylarthrite ankylosante.",
+        "conceptKey": "rheumatology.spondylo.ankylosing_spondylitis",
+        "sourceRefs": []
+      },
+      "rheum_hlab27_001": {
+        "correctIndex": 0,
+        "explanation": "HLA-B27 est l'antigène d'histocompatibilité associé aux spondylarthropathies. Il est présent chez environ 90% des patients atteints de spondylarthrite ankylosante (contre 8% dans la population générale).",
+        "conceptKey": "rheumatology.spondylo.hla_b27",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
