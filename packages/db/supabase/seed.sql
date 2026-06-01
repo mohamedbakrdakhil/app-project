@@ -8992,3 +8992,507 @@ BEGIN
   ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
 
 END $$;
+
+-- ============================================================
+-- === Subject 26: Neurochirurgie ===
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('neurosurgery', 'Neurochirurgie', 'Neurosurgery', '🧠', '#4a148c', 'Traumatismes crâniens, AVC et tumeurs cérébrales.', 26, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, published)
+VALUES ('neurosurgery', 'brain_pathology', 'Pathologies cérébrales', 'AVC, traumatismes crâniens et hypertension intracrânienne.', '🧠', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_nsurg1_id uuid;
+  v_level_nsurg2_id uuid;
+  v_level_nsurg3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters WHERE subject_id = 'neurosurgery' AND slug = 'brain_pathology';
+
+  -- ---- Niveau 1: AVC ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'nsurg_stroke',
+    'Accident vasculaire cérébral',
+    1,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Accident vasculaire cérébral",
+          "body": "AVC ischémique (85%) : occlusion artérielle → thrombolyse/thrombectomie. AVC hémorragique (15%) : rupture vasculaire. Acronyme FAST : Face/Arm/Speech/Time. Fenêtre thrombolyse : 4h30 depuis le début des symptômes. Territoires : ACM (hémiplégie controlatérale + aphasie si hémisphère dominant), ACP (déficit du champ visuel), tronc basilaire (coma, locked-in).",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "nsurg_stroke_thrombo_001",
+          "question": "Délai maximal pour la thrombolyse intraveineuse dans l'AVC ischémique ?",
+          "options": ["3 heures", "4h30 (4 heures 30 minutes)", "6 heures", "12 heures"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "nsurg_stroke_fast_001",
+          "prompt": "L'acronyme ___ aide le grand public à reconnaître les symptômes d'un AVC.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "AVC terminé",
+          "body": "Tu connais maintenant les types d'AVC, l'acronyme FAST et les fenêtres thérapeutiques.",
+          "masteredConcepts": ["neurosurgery.stroke.ischemic", "neurosurgery.stroke.fast"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_nsurg1_id;
+
+  IF v_level_nsurg1_id IS NULL THEN
+    SELECT id INTO v_level_nsurg1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'nsurg_stroke';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_nsurg1_id,
+    $json${
+      "nsurg_stroke_thrombo_001": {
+        "correctIndex": 1,
+        "explanation": "La fenêtre thérapeutique pour la thrombolyse intraveineuse par rt-PA est de 4h30 (4 heures 30 minutes) depuis le début des symptômes d'AVC ischémique. Au-delà, le risque hémorragique dépasse le bénéfice.",
+        "conceptKey": "neurosurgery.stroke.thrombolysis_window",
+        "sourceRefs": []
+      },
+      "nsurg_stroke_fast_001": {
+        "acceptedAnswers": ["FAST"],
+        "explanation": "L'acronyme FAST (Face, Arm, Speech, Time) est utilisé par le grand public pour reconnaître rapidement les signes d'un AVC et appeler les secours sans délai.",
+        "conceptKey": "neurosurgery.stroke.fast",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Traumatisme crânien ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'nsurg_trauma',
+    'Traumatisme crânio-encéphalique',
+    2,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Traumatisme crânio-encéphalique",
+          "body": "TCE léger (GCS 13-15), modéré (GCS 9-12), sévère (GCS ≤ 8). Score de Glasgow : Yeux 1-4, Verbal 1-5, Moteur 1-6, max 15. Engagement cérébral : uncal (paralysie III + hémiplégie controlatérale), transtentoriel. Hématome extradural : image lenticulaire au scanner, rupture de l'artère méningée moyenne, intervalle libre. Hématome sous-dural : image en croissant, veines ponts.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "nsurg_trauma_art_001",
+          "question": "Artère lésée dans l'hématome extradural ?",
+          "options": ["L'artère cérébrale moyenne", "L'artère vertébrale", "L'artère méningée moyenne", "L'artère communicante postérieure"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "nsurg_trauma_gcs_001",
+          "prompt": "Le score de Glasgow est côté de 3 à ___ points.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Traumatisme crânien terminé",
+          "body": "Tu connais maintenant la classification des TCE, le score de Glasgow et les hématomes intracrâniens.",
+          "masteredConcepts": ["neurosurgery.trauma.gcs", "neurosurgery.trauma.hematoma"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_nsurg2_id;
+
+  IF v_level_nsurg2_id IS NULL THEN
+    SELECT id INTO v_level_nsurg2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'nsurg_trauma';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_nsurg2_id,
+    $json${
+      "nsurg_trauma_art_001": {
+        "correctIndex": 2,
+        "explanation": "L'hématome extradural résulte le plus souvent d'une rupture de l'artère méningée moyenne, branche de l'artère maxillaire interne. Il survient après un traumatisme temporal, avec classiquement un intervalle libre avant l'aggravation neurologique.",
+        "conceptKey": "neurosurgery.trauma.epidural_hematoma",
+        "sourceRefs": []
+      },
+      "nsurg_trauma_gcs_001": {
+        "acceptedAnswers": ["15", "quinze"],
+        "explanation": "Le score de Glasgow (GCS) évalue la conscience sur 15 points : ouverture des yeux (1-4), réponse verbale (1-5) et réponse motrice (1-6). Le minimum est 3 (aucune réponse dans les 3 domaines).",
+        "conceptKey": "neurosurgery.trauma.gcs",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Hypertension intracrânienne ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'nsurg_icp',
+    'Hypertension intracrânienne',
+    3,
+    'hard',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Hypertension intracrânienne",
+          "body": "HTIC : pression normale < 15 mmHg. Triade de Cushing : hypertension artérielle + bradycardie + troubles respiratoires (signe terminal d'engagement). Causes : hémorragie, tumeur, œdème, hydrocéphalie. Traitement : tête à 30°, osmothérapie (mannitol/sérum salé hypertonique), hyperventilation (pCO2 35-40 mmHg), craniectomie décompressive.",
+          "sourceRefs": []
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "nsurg_icp_cc_001",
+          "scenario": "Un homme de 40 ans est admis après un AVP. GCS 7. Pupille droite fixe et dilatée. PA 200/110 mmHg, FC 48/min, respiration irrégulière. Le scanner montre une collection lenticulaire temporale droite avec déviation de la ligne médiane de 12 mm.",
+          "question": "Quelle triade clinique signe l'engagement cérébral imminent ?",
+          "options": ["Fièvre + céphalées + photophobie", "HTA + bradycardie + troubles respiratoires", "Mydriase + hémiparésie + aphasie", "Hypotension + tachycardie + confusion"],
+          "difficulty": "hard",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "nsurg_icp_osmotherapy_001",
+          "question": "Traitement osmotique de première intention de l'HTIC ?",
+          "options": ["Le mannitol à 20%", "Le furosémide IV", "Le sérum physiologique", "Le dexaméthasone"],
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "HTIC terminée",
+          "body": "Tu connais maintenant les signes de l'HTIC, la triade de Cushing et les traitements d'urgence.",
+          "masteredConcepts": ["neurosurgery.icp.cushing_triad", "neurosurgery.icp.treatment"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_nsurg3_id;
+
+  IF v_level_nsurg3_id IS NULL THEN
+    SELECT id INTO v_level_nsurg3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'nsurg_icp';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_nsurg3_id,
+    $json${
+      "nsurg_icp_cc_001": {
+        "correctIndex": 1,
+        "explanation": "La triade de Cushing (HTA + bradycardie + troubles respiratoires) signe un engagement cérébral imminent par compression du tronc cérébral. C'est un signe de gravité extrême nécessitant une décompression chirurgicale en urgence.",
+        "conceptKey": "neurosurgery.icp.cushing_triad",
+        "sourceRefs": []
+      },
+      "nsurg_icp_osmotherapy_001": {
+        "correctIndex": 0,
+        "explanation": "Le mannitol à 20% est le traitement osmotique de première intention de l'HTIC. Il crée un gradient osmotique qui attire l'eau du parenchyme cérébral vers le secteur vasculaire, réduisant ainsi l'œdème cérébral et la pression intracrânienne.",
+        "conceptKey": "neurosurgery.icp.treatment",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
+
+-- ============================================================
+-- === Subject 27: Oncologie médicale ===
+-- ============================================================
+
+INSERT INTO public.subjects (id, name_fr, name_en, icon, color, description_fr, order_index, published)
+VALUES ('oncology', 'Oncologie médicale', 'Medical Oncology', '🎗️', '#880e4f', 'Cancérologie : dépistage, traitements et soins de support.', 27, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.chapters (subject_id, slug, title_fr, description_fr, icon, order_index, published)
+VALUES ('oncology', 'cancer_basics', 'Bases de la cancérologie', 'Carcinogenèse, staging et traitements oncologiques.', '🎗️', 1, true)
+ON CONFLICT (subject_id, slug) DO NOTHING;
+
+DO $$
+DECLARE
+  v_chapter_id uuid;
+  v_level_onco1_id uuid;
+  v_level_onco2_id uuid;
+  v_level_onco3_id uuid;
+BEGIN
+  SELECT id INTO v_chapter_id
+    FROM public.chapters WHERE subject_id = 'oncology' AND slug = 'cancer_basics';
+
+  -- ---- Niveau 1: Carcinogenèse ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'onco_carcinogenesis',
+    'Carcinogenèse',
+    1,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Carcinogenèse",
+          "body": "Carcinogenèse : initiation (mutation) → promotion (expansion clonale) → progression. Hallmarks du cancer : auto-suffisance en signaux de croissance, insensibilité aux signaux anti-croissance, échappement à l'apoptose, réplication illimitée, angiogenèse, invasion/métastases + échappement immunitaire + reprogrammation métabolique. Oncogènes (gain de fonction : RAS, HER2) vs gènes suppresseurs de tumeur (perte de fonction : TP53, RB).",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "onco_carcino_tp53_001",
+          "question": "Gène suppresseur de tumeur le plus fréquemment muté dans les cancers ?",
+          "options": ["TP53 (gène p53)", "RB (rétinoblastome)", "BRCA1", "APC"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "onco_carcino_oncogene_001",
+          "prompt": "Les oncogènes ont un effet ___ de fonction par rapport à leur équivalent normal.",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Carcinogenèse terminée",
+          "body": "Tu connais maintenant les étapes de la carcinogenèse et les principales altérations moléculaires.",
+          "masteredConcepts": ["oncology.carcinogenesis.hallmarks", "oncology.carcinogenesis.tp53"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_onco1_id;
+
+  IF v_level_onco1_id IS NULL THEN
+    SELECT id INTO v_level_onco1_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'onco_carcinogenesis';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_onco1_id,
+    $json${
+      "onco_carcino_tp53_001": {
+        "correctIndex": 0,
+        "explanation": "TP53 est le gène suppresseur de tumeur le plus fréquemment muté dans les cancers humains, impliqué dans environ 50% des cancers. Il code pour la protéine p53, gardien du génome, qui régule l'arrêt du cycle cellulaire et l'apoptose en réponse aux dommages de l'ADN.",
+        "conceptKey": "oncology.carcinogenesis.tp53",
+        "sourceRefs": []
+      },
+      "onco_carcino_oncogene_001": {
+        "acceptedAnswers": ["gain"],
+        "explanation": "Les oncogènes résultent d'une mutation activatrice (gain de fonction) d'un proto-oncogène normal. Ils stimulent de façon excessive la prolifération cellulaire. Exemples : RAS (muté dans 30% des cancers), HER2 (amplifié dans le cancer du sein).",
+        "conceptKey": "oncology.carcinogenesis.oncogenes",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 2: Staging TNM ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'onco_staging',
+    'Stadification TNM et bilan d''extension',
+    2,
+    'medium',
+    110,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 5,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Stadification TNM",
+          "body": "Classification TNM : T = taille/invasion tumorale (T1-T4), N = ganglions (N0-N3), M = métastases (M0/M1). Stades I à IV. Intention curative vs palliative. Performance status ECOG 0-4. Réunion de concertation pluridisciplinaire (RCP) obligatoire.",
+          "sourceRefs": []
+        },
+        {
+          "type": "recall",
+          "questionKey": "onco_tnm_m1_001",
+          "question": "Dans la classification TNM, que signifie M1 ?",
+          "options": ["Absence de métastases", "Métastases ganglionnaires régionales", "Présence de métastases à distance", "Métastases non évaluées"],
+          "xpReward": 15
+        },
+        {
+          "type": "fill_blank",
+          "questionKey": "onco_rcp_001",
+          "prompt": "La prise en charge des patients atteints de cancer est discutée en réunion de concertation ___ (RCP).",
+          "xpReward": 10
+        },
+        {
+          "type": "complete",
+          "title": "Staging terminé",
+          "body": "Tu connais maintenant la classification TNM et le rôle de la RCP.",
+          "masteredConcepts": ["oncology.staging.tnm", "oncology.staging.rcp"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_onco2_id;
+
+  IF v_level_onco2_id IS NULL THEN
+    SELECT id INTO v_level_onco2_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'onco_staging';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_onco2_id,
+    $json${
+      "onco_tnm_m1_001": {
+        "correctIndex": 2,
+        "explanation": "Dans la classification TNM, M1 signifie la présence de métastases à distance (poumons, foie, os, cerveau…). M0 indique l'absence de métastases à distance. M1 classe le cancer en stade IV, généralement de traitement palliatif.",
+        "conceptKey": "oncology.staging.tnm.metastasis",
+        "sourceRefs": []
+      },
+      "onco_rcp_001": {
+        "acceptedAnswers": ["pluridisciplinaire"],
+        "explanation": "La réunion de concertation pluridisciplinaire (RCP) est obligatoire en France pour toute décision thérapeutique en oncologie. Elle réunit chirurgiens, oncologues, radiothérapeutes, radiologues et anatomopathologistes.",
+        "conceptKey": "oncology.staging.rcp",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+  -- ---- Niveau 3: Traitements oncologiques ----
+  INSERT INTO public.levels (chapter_id, slug, title_fr, order_index, difficulty, xp_reward, content_public, content_status, is_published)
+  VALUES (
+    v_chapter_id,
+    'onco_treatment',
+    'Traitements oncologiques',
+    3,
+    'hard',
+    120,
+    $json${
+      "schemaVersion": 1,
+      "locale": "fr",
+      "estimatedMinutes": 6,
+      "disclaimer": "Contenu éducatif. Ne remplace pas un avis médical.",
+      "steps": [
+        {
+          "type": "intro",
+          "title": "Traitements oncologiques",
+          "body": "Chirurgie (curatif si localisé), radiothérapie (contrôle local), chimiothérapie (cycle cellulaire : alkylants/antimétabolites/taxanes), thérapies ciblées (imatinib pour LMC-BCR-ABL, trastuzumab pour sein HER2+), immunothérapie (inhibiteurs de checkpoints : anti-PD1/CTLA4), hormonothérapie (sein RH+ : tamoxifène/inhibiteurs aromatase).",
+          "sourceRefs": []
+        },
+        {
+          "type": "clinical_case",
+          "questionKey": "onco_treat_cc_001",
+          "scenario": "Une femme de 48 ans est diagnostiquée avec un cancer du sein de 2 cm, ganglions négatifs, RH+ (ER+ PR+), HER2 négatif, Ki67 à 12%. Elle est ménopausée depuis 2 ans.",
+          "question": "Quel traitement adjuvant médical est prioritairement indiqué ?",
+          "options": ["Chimiothérapie par anthracyclines", "Trastuzumab (Herceptin)", "Hormonothérapie par inhibiteur de l'aromatase", "Immunothérapie par anti-PD1"],
+          "difficulty": "medium",
+          "xpReward": 25
+        },
+        {
+          "type": "recall",
+          "questionKey": "onco_immunotherapy_001",
+          "question": "Immunothérapie ciblant le point de contrôle immunitaire PD-1 ?",
+          "options": ["L'ipilimumab (anti-CTLA4)", "Les anti-PD1 (pembrolizumab, nivolumab)", "Le bévacizumab (anti-VEGF)", "Le cetuximab (anti-EGFR)"],
+          "xpReward": 15
+        },
+        {
+          "type": "complete",
+          "title": "Traitements oncologiques terminés",
+          "body": "Tu connais maintenant les principales modalités de traitement en oncologie.",
+          "masteredConcepts": ["oncology.treatment.hormonal", "oncology.treatment.immunotherapy"]
+        }
+      ]
+    }$json$::jsonb,
+    'reviewed',
+    true
+  )
+  ON CONFLICT (chapter_id, slug) DO UPDATE
+    SET title_fr = EXCLUDED.title_fr,
+        content_public = EXCLUDED.content_public,
+        is_published = EXCLUDED.is_published
+  RETURNING id INTO v_level_onco3_id;
+
+  IF v_level_onco3_id IS NULL THEN
+    SELECT id INTO v_level_onco3_id FROM public.levels WHERE chapter_id = v_chapter_id AND slug = 'onco_treatment';
+  END IF;
+
+  INSERT INTO public.level_answer_keys (level_id, answers)
+  VALUES (
+    v_level_onco3_id,
+    $json${
+      "onco_treat_cc_001": {
+        "correctIndex": 2,
+        "explanation": "Ce cancer du sein luminale A (RH+/HER2-, Ki67 bas, ganglions négatifs) chez une femme ménopausée est une indication d'hormonothérapie adjuvante par inhibiteur de l'aromatase (létrozole, anastrozole, exémestane) pendant 5 ans. La chimiothérapie n'est pas indiquée (faible risque de récidive). Le trastuzumab est réservé aux cancers HER2+.",
+        "conceptKey": "oncology.treatment.breast.hormonal",
+        "sourceRefs": []
+      },
+      "onco_immunotherapy_001": {
+        "correctIndex": 1,
+        "explanation": "Les anti-PD1 (pembrolizumab, nivolumab) bloquent l'interaction entre PD-1 (exprimé sur les lymphocytes T) et ses ligands PD-L1/PD-L2 (exprimés sur les cellules tumorales), restaurant ainsi l'activité cytotoxique des lymphocytes T anti-tumoraux.",
+        "conceptKey": "oncology.treatment.immunotherapy.pd1",
+        "sourceRefs": []
+      }
+    }$json$::jsonb
+  )
+  ON CONFLICT (level_id) DO UPDATE SET answers = EXCLUDED.answers;
+
+END $$;
